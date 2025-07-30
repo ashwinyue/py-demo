@@ -8,7 +8,7 @@ import os
 from flask.cli import with_appcontext
 from app import create_app, db
 from app.models import User, UserSession
-from app.extensions import get_redis_client, get_nacos_client
+from app.extensions import get_redis_client
 
 # 创建应用实例
 app = create_app(os.getenv('FLASK_CONFIG') or 'development')
@@ -21,7 +21,7 @@ def make_shell_context():
         'User': User,
         'UserSession': UserSession,
         'redis_client': get_redis_client(),
-        'nacos_client': get_nacos_client()
+
     }
 
 @app.cli.command()
@@ -83,17 +83,7 @@ def test_connections():
     except Exception as e:
         print(f'✗ Redis连接失败: {e}')
     
-    print('\n测试Nacos连接...')
-    try:
-        nacos_client = get_nacos_client()
-        if nacos_client:
-            # 尝试获取服务列表
-            services = nacos_client.list_naming_instance('user-service')
-            print('✓ Nacos连接正常')
-        else:
-            print('✗ Nacos客户端未初始化')
-    except Exception as e:
-        print(f'✗ Nacos连接失败: {e}')
+
 
 if __name__ == '__main__':
     # 开发环境启动

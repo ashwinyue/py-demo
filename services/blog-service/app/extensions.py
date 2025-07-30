@@ -4,12 +4,9 @@ import jwt
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import current_app, request, jsonify, g
-from nacos import NacosClient
-from .utils.nacos_config import nacos_config_manager
 
 # 全局变量
 redis_client = None
-nacos_client = None
 
 def init_redis(app):
     """初始化Redis客户端"""
@@ -36,86 +33,28 @@ def get_redis_client():
     """获取Redis客户端"""
     return redis_client
 
-def init_nacos(app):
-    """初始化Nacos客户端"""
-    global nacos_client
-    try:
-        nacos_client = NacosClient(
-            server_addresses=app.config['NACOS_SERVER_ADDRESSES'],
-            namespace=app.config['NACOS_NAMESPACE'],
-            username=app.config.get('NACOS_USERNAME'),
-            password=app.config.get('NACOS_PASSWORD')
-        )
-        
-        # 初始化Nacos配置管理器
-        nacos_config_manager.init_app(app)
-        
-        app.logger.info('Nacos客户端初始化成功')
-    except Exception as e:
-        app.logger.error(f'Nacos客户端初始化失败: {e}')
-        nacos_client = None
-
-def get_nacos_client():
-    """获取Nacos客户端"""
-    return nacos_client
-
-def register_service():
-    """注册服务到Nacos"""
-    if not nacos_client:
-        current_app.logger.warning('Nacos客户端未初始化，跳过服务注册')
-        return
+def get_service_url(service_name):
+    """获取服务URL（使用Kubernetes原生服务发现）"""
+    service_urls = {
+        'user-service': current_app.config.get('USER_SERVICE_URL', 'http://python-miniblog-user:5001'),
+        'blog-service': current_app.config.get('BLOG_SERVICE_URL', 'http://python-miniblog-blog:5002')
+    }
     
-    try:
-        nacos_client.add_naming_instance(
-            service_name=current_app.config['SERVICE_NAME'],
-            ip=current_app.config['SERVICE_IP'],
-            port=current_app.config['SERVICE_PORT'],
-            group_name=current_app.config['NACOS_GROUP_NAME'],
-            metadata={
-                'version': '1.0.0',
-                'service_type': 'blog-service',
-                'health_check_url': f"http://{current_app.config['SERVICE_IP']}:{current_app.config['SERVICE_PORT']}/healthz"
-            }
-        )
-        current_app.logger.info(f'服务注册成功: {current_app.config["SERVICE_NAME"]}')
-    except Exception as e:
-        current_app.logger.error(f'服务注册失败: {e}')
-
-def discover_service(service_name):
-    """发现服务"""
-    if not nacos_client:
-        current_app.logger.warning('Nacos客户端未初始化')
-        return None
-    
-    try:
-        instances = nacos_client.list_naming_instance(
-            service_name=service_name,
-            group_name=current_app.config['NACOS_GROUP_NAME']
-        )
-        
-        # 过滤健康的实例
-        healthy_instances = [inst for inst in instances['hosts'] if inst['healthy']]
-        
-        if healthy_instances:
-            # 简单的负载均衡：返回第一个健康实例
-            instance = healthy_instances[0]
-            return f"http://{instance['ip']}:{instance['port']}"
-        
-        current_app.logger.warning(f'未找到健康的服务实例: {service_name}')
-        return None
-    
-    except Exception as e:
-        current_app.logger.error(f'服务发现失败: {e}')
+    url = service_urls.get(service_name)
+    if url:
+        current_app.logger.info(f'获取服务URL: {service_name} -> {url}')
+        return url
+    else:
+        current_app.logger.warning(f'未知的服务名称: {service_name}')
         return None
 
 def call_user_service(endpoint, method='GET', data=None, headers=None, token=None):
     """调用用户服务"""
-    # 发现用户服务
-    user_service_url = discover_service(current_app.config['USER_SERVICE_NAME'])
+    # 获取用户服务URL
+    user_service_url = get_service_url('user-service')
     if not user_service_url:
-        # 降级处理：使用默认地址
-        user_service_url = 'http://localhost:5001'
-        current_app.logger.warning(f'使用默认用户服务地址: {user_service_url}')
+        current_app.logger.error('无法获取用户服务URL')
+        return None
     
     url = f"{user_service_url}{endpoint}"
     

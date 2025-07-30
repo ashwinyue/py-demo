@@ -1,12 +1,10 @@
 from flask_sqlalchemy import SQLAlchemy
 import redis
-import nacos
 import logging
 import jwt
 from functools import wraps
 from flask import request, jsonify, current_app
 from typing import Optional
-from .utils.nacos_config import nacos_config_manager
 
 # 数据库实例
 db = SQLAlchemy()
@@ -140,71 +138,11 @@ class RedisClient:
             return False
 
 
-class NacosClient:
-    """Nacos客户端封装"""
-    
-    def __init__(self):
-        self.client: Optional[nacos.NacosClient] = None
-        self.service_name: Optional[str] = None
-        self.service_ip: Optional[str] = None
-        self.service_port: Optional[int] = None
-    
-    def init_app(self, app):
-        """初始化Nacos客户端"""
-        try:
-            server_addresses = app.config['NACOS_SERVER']
-            namespace = app.config['NACOS_NAMESPACE']
-            username = app.config.get('NACOS_USERNAME')
-            password = app.config.get('NACOS_PASSWORD')
-            
-            self.client = nacos.NacosClient(
-                server_addresses=server_addresses,
-                namespace=namespace,
-                username=username,
-                password=password
-            )
-            
-            self.service_name = app.config['SERVICE_NAME']
-            self.service_ip = app.config['SERVICE_HOST']
-            self.service_port = app.config['SERVICE_PORT']
-            
-            # 初始化Nacos配置管理器
-            nacos_config_manager.init_app(app)
-            
-            app.logger.info("Nacos client initialized successfully")
-        except Exception as e:
-            app.logger.error(f"Failed to initialize Nacos client: {e}")
-            self.client = None
-    
-    def register_service(self, service_name: str, ip: str, port: int, metadata: dict = None):
-        """注册服务"""
-        if not self.client:
-            return False
-        try:
-            return self.client.add_naming_instance(
-                service_name=service_name,
-                ip=ip,
-                port=port,
-                metadata=metadata or {}
-            )
-        except Exception as e:
-            logging.error(f"Failed to register service: {e}")
-            return False
-    
-    def discover_service(self, service_name: str):
-        """发现服务实例"""
-        if not self.client:
-            return []
-        try:
-            return self.client.list_naming_instance(service_name=service_name)
-        except Exception as e:
-            logging.error(f"Failed to discover service: {e}")
-            return []
+
 
 
 # 创建实例
 redis_client = RedisClient()
-nacos_client = NacosClient()
 
 
 def get_redis_client():
@@ -212,9 +150,7 @@ def get_redis_client():
     return redis_client
 
 
-def get_nacos_client():
-    """获取Nacos客户端实例"""
-    return nacos_client
+
 
 
 def token_required(f):

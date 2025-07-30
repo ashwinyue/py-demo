@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 global:
-  namespace: default
+  namespace: miniblog
   imageRegistry: ""
   imagePullSecrets: []
 
@@ -158,9 +158,9 @@ ingress:
                 number: 8080
   tls: []
 
-# Nacos Service Registry
+# Nacos Service Registry (Disabled - using Kubernetes native service discovery)
 nacos:
-  enabled: true
+  enabled: false
   image:
     repository: nacos/nacos-server
     tag: latest

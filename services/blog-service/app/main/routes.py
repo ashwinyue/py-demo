@@ -2,7 +2,7 @@ from flask import jsonify, current_app
 from app import db
 from app.main import bp
 from app.models import Post, Category, Tag, Comment
-from app.extensions import get_redis_client, get_nacos_client
+from app.extensions import get_redis_client
 
 @bp.route('/')
 def index():
@@ -67,26 +67,7 @@ def health_check():
             'message': f'Redis connection failed: {str(e)}'
         }
     
-    # 检查Nacos连接
-    try:
-        nacos_client = get_nacos_client()
-        if nacos_client:
-            # 尝试获取服务列表来验证连接
-            nacos_client.list_naming_instance('blog-service')
-            health_status['checks']['nacos'] = {
-                'status': 'healthy',
-                'message': 'Nacos connection successful'
-            }
-        else:
-            health_status['checks']['nacos'] = {
-                'status': 'warning',
-                'message': 'Nacos client not initialized'
-            }
-    except Exception as e:
-        health_status['checks']['nacos'] = {
-            'status': 'unhealthy',
-            'message': f'Nacos connection failed: {str(e)}'
-        }
+
     
     # 根据检查结果确定总体状态
     if any(check['status'] == 'unhealthy' for check in health_status['checks'].values()):

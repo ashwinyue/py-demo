@@ -1,6 +1,6 @@
 from flask import jsonify, current_app
 from app.main import main as bp
-from app.extensions import get_redis_client, get_nacos_client
+from app.extensions import get_redis_client
 from datetime import datetime
 
 @bp.route('/')
@@ -23,7 +23,7 @@ def index():
 def health_check():
     """健康检查"""
     redis_client = get_redis_client()
-    nacos_client = get_nacos_client()
+
     
     # 检查数据库连接
     db_status = 'connected'
@@ -43,8 +43,7 @@ def health_check():
     else:
         redis_status = 'not configured'
     
-    # 检查Nacos连接
-    nacos_status = 'connected' if nacos_client else 'not configured'
+
     
     health_status = {
         'status': 'healthy',
@@ -56,12 +55,12 @@ def health_check():
         'dependencies': {
             'database': db_status,
             'redis': redis_status,
-            'nacos': nacos_status
+    
         }
     }
     
     # 如果任何依赖项失败，返回503状态码
-    if 'disconnected' in [db_status, redis_status] or nacos_status == 'not configured':
+    if 'disconnected' in [db_status, redis_status]:
         health_status['status'] = 'unhealthy'
         return jsonify(health_status), 503
     

@@ -53,12 +53,7 @@ class Config:
     SERVICE_PORT = env_config('SERVICE_PORT', default=5001, cast=int)
     SERVICE_VERSION = env_config('SERVICE_VERSION', default='1.0.0')
     
-    # Nacos配置
-    NACOS_SERVER = env_config('NACOS_SERVER', default='127.0.0.1:8848')
-    NACOS_NAMESPACE = env_config('NACOS_NAMESPACE', default='public')
-    NACOS_GROUP = env_config('NACOS_GROUP', default='DEFAULT_GROUP')
-    NACOS_USERNAME = env_config('NACOS_USERNAME', default=None)
-    NACOS_PASSWORD = env_config('NACOS_PASSWORD', default=None)
+
     
     # 日志配置
     LOG_TO_STDOUT = env_config('LOG_TO_STDOUT', default=True, cast=bool)

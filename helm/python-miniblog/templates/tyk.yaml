@@ -44,12 +44,6 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
-            - name: TYK_GW_POLICIES_POLICY_SOURCE
-              value: "file"
-            - name: TYK_GW_POLICIES_POLICY_PATH
-              value: "/opt/tyk-gateway/policies"
-            - name: TYK_GW_APP_PATH
-              value: "/opt/tyk-gateway/apps/api-definition.json"
           volumeMounts:
             - name: tyk-api-definition
               mountPath: /opt/tyk-gateway/apps

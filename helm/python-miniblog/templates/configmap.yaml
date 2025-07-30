@@ -15,13 +15,6 @@ data:
   REDIS_PORT: "6379"
   REDIS_DB: "0"
   
-  # Nacos Configuration (Registry Only)
-  NACOS_HOST: "python-miniblog-nacos"
-  NACOS_PORT: "8848"
-  NACOS_NAMESPACE: "public"
-  NACOS_USERNAME: "nacos"
-  NACOS_PASSWORD: "nacos"
-  
   # JWT Configuration
   JWT_SECRET_KEY: "your-secret-key-here"
   JWT_ALGORITHM: "HS256"
@@ -33,7 +26,7 @@ data:
   CACHE_DEFAULT_TIMEOUT: "300"
   USER_SERVICE_TIMEOUT: "10"
   
-  # Service Discovery (Registry Only)
-  REGISTRY_ENABLED: "true"
-  CONFIG_CENTER_ENABLED: "false"
+  # Service Configuration
+  USER_SERVICE_URL: "http://python-miniblog-user:5001"
+  BLOG_SERVICE_URL: "http://python-miniblog-blog:5002"
 {{- end }}

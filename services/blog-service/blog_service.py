@@ -4,7 +4,7 @@ from flask import Flask
 from flask.cli import with_appcontext
 from app import create_app, db
 from app.models import Post, Category, Tag, Comment
-from app.extensions import get_redis_client, get_nacos_client
+from app.extensions import get_redis_client
 
 # 创建应用实例
 app = create_app(os.getenv('FLASK_CONFIG') or 'development')
@@ -101,11 +101,11 @@ def create_sample_data():
 
 ## 实现方案
 
-使用Flask + Nacos + Redis构建微服务系统。
+使用Flask + Redis构建微服务系统。
 
 ### 服务注册与发现
 
-使用Nacos作为注册中心，实现服务的自动注册和发现。
+使用Kubernetes原生服务发现机制。
 
 ### 缓存策略
 
@@ -201,17 +201,7 @@ def test_connections():
     except Exception as e:
         results.append(f'✗ Redis连接失败: {e}')
     
-    # 测试Nacos连接
-    try:
-        nacos_client = get_nacos_client()
-        if nacos_client:
-            # 尝试获取服务列表来测试连接
-            services = nacos_client.list_naming_instance('blog-service')
-            results.append('✓ Nacos连接正常')
-        else:
-            results.append('✗ Nacos客户端未初始化')
-    except Exception as e:
-        results.append(f'✗ Nacos连接失败: {e}')
+
     
     for result in results:
         click.echo(result)

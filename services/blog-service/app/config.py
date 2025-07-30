@@ -29,12 +29,7 @@ class Config:
     REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
     REDIS_DECODE_RESPONSES = True
     
-    # Nacos配置
-    NACOS_SERVER_ADDRESSES = os.environ.get('NACOS_SERVER_ADDRESSES') or 'localhost:8848'
-    NACOS_NAMESPACE = os.environ.get('NACOS_NAMESPACE') or 'public'
-    NACOS_GROUP_NAME = os.environ.get('NACOS_GROUP_NAME') or 'DEFAULT_GROUP'
-    NACOS_USERNAME = os.environ.get('NACOS_USERNAME')
-    NACOS_PASSWORD = os.environ.get('NACOS_PASSWORD')
+
     
     # 服务配置
     SERVICE_NAME = 'blog-service'
@@ -92,8 +87,7 @@ class ProductionConfig(Config):
     # 生产环境Redis配置
     REDIS_HOST = os.environ.get('REDIS_HOST') or 'redis'
     
-    # 生产环境Nacos配置
-    NACOS_SERVER_ADDRESSES = os.environ.get('NACOS_SERVER_ADDRESSES') or 'nacos:8848'
+
     
     # 生产环境服务配置
     SERVICE_IP = os.environ.get('SERVICE_IP') or '0.0.0.0'

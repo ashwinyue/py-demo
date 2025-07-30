@@ -40,13 +40,8 @@ def create_app(config_name='development'):
     app.register_blueprint(api_bp, url_prefix='/api')
     
     # 初始化扩展服务
-    from app.extensions import init_redis, init_nacos, register_service
+    from app.extensions import init_redis
     init_redis(app)
-    init_nacos(app)
-    
-    # 注册服务到Nacos
-    with app.app_context():
-        register_service()
     
     return app
 
