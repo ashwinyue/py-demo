@@ -1,28 +1,105 @@
-[project]
-name = "miniblog"
-version = "0.1.0"
-description = "A mini blog API built with Flask"
-requires-python = ">=3.8.1"
-dependencies = [
-    "Flask>=2.3.0",
-    "Flask-SQLAlchemy>=3.0.0",
-    "PyMySQL>=1.1.0",
-    "Werkzeug>=2.3.0",
-    "gunicorn>=21.0.0",
-    "python-dotenv>=1.0.0",
-    "requests>=2.31.0",
-    "cryptography>=41.0.0",
-    "redis>=4.5.0",
-    "nacos-sdk-python>=0.1.5"
-]
-
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
-[tool.uv]
-dev-dependencies = [
-    "pytest>=7.0.0",
-    "black>=23.0.0",
-    "flake8>=6.0.0"
+[project]
+name = "python-miniblog"
+version = "1.0.0"
+description = "A modern Python microservices blog application"
+authors = [
+    {name = "MiniBlog Team", email = "team@miniblog.com"}
 ]
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "fastapi==0.104.1",
+    "uvicorn[standard]==0.24.0",
+    "sqlalchemy==2.0.23",
+    # "psycopg2-binary==2.9.9",  # 暂时注释，项目使用MySQL
+    "PyMySQL==1.1.0",
+    "cryptography==41.0.4",
+    "redis==5.0.1",
+    "passlib[bcrypt]==1.7.4",
+    "python-jose[cryptography]==3.3.0",
+    "python-multipart==0.0.6",
+    "email-validator==2.1.0",
+    "pydantic==2.5.0",
+    "pydantic-settings==2.1.0",
+    "python-dotenv==1.0.0",
+    "alembic==1.13.1",
+    "requests==2.31.0",
+    "markdown==3.4.4",
+    "bleach==6.0.0",
+    "python-dateutil==2.8.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==7.4.2",
+    "pytest-asyncio==0.21.1",
+    "flake8==6.0.0",
+    "black==23.9.1",
+    "build==1.0.3",
+    "wheel==0.41.2",
+]
+
+[project.scripts]
+user-service = "src.user_service.main:main"
+blog-service = "src.blog_service.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml", "*.json", "*.txt", "*.md"]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+(
+  /(
+      \.eggs
+    | \.git
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+)
+'''
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".eggs",
+    "*.egg-info",
+    ".venv",
+    "venv",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+asyncio_mode = "auto"

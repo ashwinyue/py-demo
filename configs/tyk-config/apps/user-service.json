@@ -3,7 +3,7 @@
   "slug": "miniblog-user-api",
   "api_id": "miniblog-user-api",
   "org_id": "1",
-  "use_keyless": true,
+  "use_keyless": false,
   "use_oauth2": false,
   "use_openid": false,
   "openid_options": {
@@ -35,13 +35,13 @@
   "client_certificates": [],
   "upstream_certificates": {},
   "pinned_public_keys": {},
-  "enable_jwt": false,
+  "enable_jwt": true,
   "jwt_signing_method": "hmac",
-  "jwt_source": "your-secret-key-here",
+  "jwt_source": "miniblog-jwt-secret-key-2024",
   "jwt_identity_base_field": "user_id",
   "jwt_client_base_field": "",
   "jwt_policy_field_name": "pol",
-  "jwt_default_policies": [],
+  "jwt_default_policies": ["jwt_policy"],
   "jwt_issued_at_validation_skew": 0,
   "jwt_expires_at_validation_skew": 0,
   "jwt_not_before_validation_skew": 0,
@@ -63,7 +63,32 @@
           "black_list": []
         },
         "use_extended_paths": true,
-        "extended_paths": {},
+        "extended_paths": {
+          "ignored": [
+            {
+              "path": "/api/auth/register",
+              "method_actions": {
+                "POST": {
+                  "action": "no_action",
+                  "code": 200,
+                  "data": "",
+                  "headers": {}
+                }
+              }
+            },
+            {
+              "path": "/api/auth/login",
+              "method_actions": {
+                "POST": {
+                  "action": "no_action",
+                  "code": 200,
+                  "data": "",
+                  "headers": {}
+                }
+              }
+            }
+          ]
+        },
         "global_headers": {},
         "global_headers_remove": [],
         "global_response_headers": {},

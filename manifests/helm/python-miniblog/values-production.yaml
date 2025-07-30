@@ -1,0 +1,254 @@
+# Production Environment Values for python-miniblog
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  namespace: miniblog
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# ConfigMap for application configuration
+configMap:
+  enabled: true
+
+# User Service
+userService:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: python-miniblog-user
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5001
+    targetPort: 5001
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    DATABASE_URL: "mysql+pymysql://miniblog:miniblog123@python-miniblog-mysql:3306/miniblog"
+    MYSQL_HOST: "python-miniblog-mysql"
+    MYSQL_PORT: "3306"
+    MYSQL_USER: "miniblog"
+    MYSQL_PASSWORD: "miniblog123"
+    MYSQL_DATABASE: "miniblog"
+    REDIS_URL: "redis://python-miniblog-redis:6379/0"
+    REDIS_HOST: "python-miniblog-redis"
+    REDIS_PORT: "6379"
+    REDIS_DB: "0"
+    JWT_SECRET_KEY: "your-production-secret-key-here"
+    SECRET_KEY: "your-production-secret-key-here"
+    SERVICE_NAME: "user-service"
+    FLASK_ENV: "production"
+    FLASK_CONFIG: "production"
+  livenessProbe:
+    path: /healthz
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 10
+  readinessProbe:
+    path: /healthz
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+
+# Blog Service
+blogService:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: python-miniblog-blog
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5002
+    targetPort: 5002
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    DATABASE_URL: "mysql+pymysql://miniblog:miniblog123@python-miniblog-mysql:3306/miniblog"
+    MYSQL_HOST: "python-miniblog-mysql"
+    MYSQL_PORT: "3306"
+    MYSQL_USER: "miniblog"
+    MYSQL_PASSWORD: "miniblog123"
+    MYSQL_DATABASE: "miniblog"
+    REDIS_URL: "redis://python-miniblog-redis:6379/1"
+    REDIS_HOST: "python-miniblog-redis"
+    REDIS_PORT: "6379"
+    REDIS_DB: "1"
+    JWT_SECRET_KEY: "your-production-secret-key-here"
+    SECRET_KEY: "your-production-secret-key-here"
+    SERVICE_NAME: "blog-service"
+    FLASK_ENV: "production"
+    FLASK_CONFIG: "production"
+  livenessProbe:
+    path: /healthz
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 10
+  readinessProbe:
+    path: /healthz
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+
+# MySQL Database
+mysql:
+  enabled: true
+  image:
+    repository: mysql
+    tag: "8.0"
+    pullPolicy: IfNotPresent
+  auth:
+    rootPassword: "rootpassword"
+    username: "miniblog"
+    password: "miniblog123"
+    database: "miniblog"
+  service:
+    type: ClusterIP
+    port: 3306
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: ""
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+# Redis Cache
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 6379
+  persistence:
+    enabled: true
+    size: 8Gi
+    storageClass: ""
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+
+# Ingress
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: miniblog.yourdomain.com
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: python-miniblog-user
+              port:
+                number: 5001
+  tls:
+    - secretName: miniblog-tls
+      hosts:
+        - miniblog.yourdomain.com
+
+# Nacos Service Registry (Disabled)
+nacos:
+  enabled: false
+
+# Tyk API Gateway
+tyk:
+  enabled: true
+  gateway:
+    image:
+      repository: tykio/tyk-gateway
+      tag: v5.2
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 8080
+    env:
+      TYK_GW_SECRET: "your-production-tyk-secret-key"
+      TYK_GW_STORAGE_TYPE: "redis"
+      TYK_GW_STORAGE_HOST: "python-miniblog-redis"
+      TYK_GW_STORAGE_PORT: "6379"
+      TYK_GW_STORAGE_DATABASE: "2"
+      TYK_GW_POLICIES_POLICY_SOURCE: "file"
+      TYK_GW_POLICIES_POLICY_PATH: "/opt/tyk-gateway/policies"
+      TYK_GW_APP_PATH: "/opt/tyk-gateway/apps"
+      TYK_GW_LISTENPORT: "8080"
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+  dashboard:
+    enabled: false
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod Security Context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 2000
+
+# Security Context
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop:
+    - ALL
+
+# Node Selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - python-miniblog
+        topologyKey: kubernetes.io/hostname

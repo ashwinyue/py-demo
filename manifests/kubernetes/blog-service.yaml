@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-miniblog-blog
+  namespace: miniblog
+  labels:
+    app: python-miniblog-blog
+    component: blog-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: python-miniblog-blog
+  template:
+    metadata:
+      labels:
+        app: python-miniblog-blog
+        component: blog-service
+    spec:
+      containers:
+      - name: blog-service
+        image: python-miniblog-blog:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5002
+          name: http
+        env:
+        - name: SERVICE_NAME
+          value: "blog-service"
+        - name: SERVICE_PORT
+          value: "5002"
+        - name: DATABASE_URL
+          value: "mysql://root:password@mysql:3306/miniblog"
+        - name: REDIS_HOST
+          value: "redis"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: USER_SERVICE_URL
+          value: "http://python-miniblog-user:5001"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5002
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-miniblog-blog
+  namespace: miniblog
+  labels:
+    app: python-miniblog-blog
+    component: blog-service
+spec:
+  type: NodePort
+  ports:
+  - port: 5002
+    targetPort: 5002
+    nodePort: 30002
+    name: http
+  selector:
+    app: python-miniblog-blog

@@ -19,31 +19,37 @@
 
 ```
 py-demo/
-├── services/                     # 微服务代码
-│   ├── user-service/             # 用户服务
-│   ├── blog-service/             # 博客服务
-│   └── common/                   # 共享代码
+├── src/                          # 源代码目录
+│   ├── shared/                   # 共享代码库
+│   │   ├── config/               # 配置管理
+│   │   ├── database/             # 数据库操作
+│   │   ├── middleware/           # 中间件
+│   │   ├── utils/                # 工具函数
+│   │   └── exceptions/           # 异常处理
+│   ├── user_service/             # 用户服务
+│   └── blog_service/             # 博客服务
+├── bin/                          # 构建产物目录
 ├── scripts/                      # 部署和管理脚本
 │   ├── deploy.sh                 # Kubernetes部署
 │   ├── start-dev.sh              # 微服务开发环境启动
-│   ├── stop-dev.sh               # 微服务开发环境停止
-│   └── manage_nacos_config.py    # Nacos配置管理脚本
+│   └── stop-dev.sh               # 微服务开发环境停止
 ├── docker/                       # Docker配置
-│   └── docker-compose.microservices.yml
+│   ├── Dockerfile.user           # 用户服务镜像
+│   ├── Dockerfile.blog           # 博客服务镜像
+│   └── compose/                  # Docker Compose配置
 ├── configs/                      # 配置文件
 │   ├── tyk-config/               # Tyk API网关配置
-│   ├── .env.example              # 环境变量示例
-│   └── nacos-config-examples.json # Nacos配置示例
+│   └── .env.example              # 环境变量示例
 ├── docs/                         # 项目文档
 │   ├── README-MICROSERVICES.md   # 微服务架构文档
-│   ├── PROJECT-STRUCTURE.md      # 项目结构文档
-│   └── nacos-config-guide.md     # Nacos配置管理指南
+│   └── project-structure.md      # 项目结构文档
 ├── helm/                         # Kubernetes部署
+│   └── python-miniblog/          # Helm Chart
 ├── tests/                        # 测试文件
 ├── Makefile                      # 项目管理命令
-├── main.py                       # 主入口文件
-├── miniblog.py                   # 应用启动文件
-└── requirements.txt              # Python依赖
+├── pyproject.toml                # 项目配置文件
+├── requirements.txt              # Python依赖
+└── PROJECT_RESTRUCTURE_PLAN.md   # 重构计划文档
 ```
 
 详细的项目结构说明请参考 [PROJECT-STRUCTURE.md](docs/PROJECT-STRUCTURE.md)。
@@ -81,10 +87,10 @@ cd ../blog-service && uv pip install -r requirements.txt
 #### 3. 启动微服务
 ```bash
 # 启动所有微服务（包含数据库、Redis、API网关）
-./scripts/start-dev.sh
+./scripts/dev-start.sh
 
 # 停止所有服务
-./scripts/stop-dev.sh
+./scripts/dev-stop.sh
 ```
 
 #### 4. 初始化数据库
@@ -120,22 +126,49 @@ cd ../blog-service && flask db upgrade
 
 - `GET /healthz` - 健康检查
 
-### 用户管理
+### 用户管理（通过API网关）
 
-- `GET /api/users` - 获取用户列表
-- `POST /api/users` - 创建用户
-- `GET /api/users/{id}` - 获取用户详情
-- `PUT /api/users/{id}` - 更新用户
-- `DELETE /api/users/{id}` - 删除用户
-- `GET /api/users/{id}/posts` - 获取用户文章
+- `GET /user-service/users` - 获取用户列表
+- `POST /user-service/users` - 创建用户
+- `GET /user-service/users/{id}` - 获取用户详情
+- `PUT /user-service/users/{id}` - 更新用户
+- `DELETE /user-service/users/{id}` - 删除用户
+- `GET /user-service/users/search` - 搜索用户
 
-### 文章管理
+### 文章管理（通过API网关）
 
-- `GET /api/posts` - 获取文章列表（支持分页）
+- `GET /blog-service/posts` - 获取文章列表（支持分页）
+- `POST /blog-service/posts` - 创建文章
+- `GET /blog-service/posts/{id}` - 获取文章详情
+- `PUT /blog-service/posts/{id}` - 更新文章
+- `DELETE /blog-service/posts/{id}` - 删除文章
+- `POST /blog-service/posts/{id}/like` - 点赞文章
+
+### 分类和标签管理（通过API网关）
+
+- `GET /blog-service/categories` - 获取分类列表
+- `POST /blog-service/categories` - 创建分类
+- `GET /blog-service/tags` - 获取标签列表
+- `POST /blog-service/tags` - 创建标签
+
+### 评论管理（通过API网关）
+
+- `GET /blog-service/comments` - 获取评论列表
+- `POST /blog-service/comments` - 创建评论
+- `PUT /blog-service/comments/{id}` - 更新评论
+- `DELETE /blog-service/comments/{id}` - 删除评论
+
+### 直接访问服务（开发环境）
+
+**用户服务 (端口5001):**
+- `GET /api/v1/users` - 获取用户列表
+- `POST /api/v1/users` - 创建用户
+- `GET /api/v1/users/{id}` - 获取用户详情
+
+**博客服务 (端口5002):**
+- `GET /api/posts` - 获取文章列表
 - `POST /api/posts` - 创建文章
 - `GET /api/posts/{id}` - 获取文章详情
-- `PUT /api/posts/{id}` - 更新文章
-- `DELETE /api/posts/{id}` - 删除文章
 
 ## 配置说明
 

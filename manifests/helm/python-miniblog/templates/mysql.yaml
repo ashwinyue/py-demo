@@ -1,0 +1,238 @@
+{{- if .Values.mysql.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "python-miniblog.fullname" . }}-mysql
+  labels:
+    {{- include "python-miniblog.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "python-miniblog.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mysql
+  template:
+    metadata:
+      labels:
+        {{- include "python-miniblog.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: "{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
+        imagePullPolicy: {{ .Values.mysql.image.pullPolicy }}
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: {{ .Values.mysql.auth.rootPassword | quote }}
+        - name: MYSQL_DATABASE
+          value: {{ .Values.mysql.auth.database | quote }}
+        - name: MYSQL_USER
+          value: {{ .Values.mysql.auth.username | quote }}
+        - name: MYSQL_PASSWORD
+          value: {{ .Values.mysql.auth.password | quote }}
+        - name: MYSQL_ROOT_HOST
+          value: "%"
+        ports:
+        - containerPort: {{ .Values.mysql.service.port }}
+          name: mysql
+        volumeMounts:
+        {{- if .Values.mysql.persistence.enabled }}
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        {{- end }}
+        - name: mysql-init
+          mountPath: /docker-entrypoint-initdb.d
+        resources:
+          {{- toYaml .Values.mysql.resources | nindent 10 }}
+        livenessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+      volumes:
+      {{- if .Values.mysql.persistence.enabled }}
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: {{ include "python-miniblog.fullname" . }}-mysql-pvc
+      {{- end }}
+      - name: mysql-init
+        configMap:
+          name: {{ include "python-miniblog.fullname" . }}-mysql-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "python-miniblog.fullname" . }}-mysql
+  labels:
+    {{- include "python-miniblog.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+spec:
+  type: {{ .Values.mysql.service.type }}
+  ports:
+  - port: {{ .Values.mysql.service.port }}
+    targetPort: mysql
+    protocol: TCP
+    name: mysql
+  selector:
+    {{- include "python-miniblog.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+{{- if .Values.mysql.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "python-miniblog.fullname" . }}-mysql-pvc
+  labels:
+    {{- include "python-miniblog.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.mysql.persistence.size }}
+  {{- if .Values.mysql.persistence.storageClass }}
+  storageClassName: {{ .Values.mysql.persistence.storageClass }}
+  {{- end }}
+{{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "python-miniblog.fullname" . }}-mysql-init
+  labels:
+    {{- include "python-miniblog.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+data:
+  01-create-miniblog-db.sql: |
+    CREATE DATABASE IF NOT EXISTS miniblog CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    USE miniblog;
+    GRANT ALL PRIVILEGES ON miniblog.* TO '{{ .Values.mysql.auth.username }}'@'%';
+    FLUSH PRIVILEGES;
+    
+    -- Create users table
+    CREATE TABLE IF NOT EXISTS users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      username VARCHAR(80) UNIQUE NOT NULL,
+      email VARCHAR(120) UNIQUE NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_username (username),
+      INDEX idx_email (email)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    
+    -- Create categories table
+    CREATE TABLE IF NOT EXISTS categories (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(50) NOT NULL UNIQUE,
+      description VARCHAR(200),
+      slug VARCHAR(50) UNIQUE,
+      parent_id INT,
+      post_count INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_name (name),
+      INDEX idx_slug (slug),
+      FOREIGN KEY (parent_id) REFERENCES categories(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    
+    -- Create tags table
+    CREATE TABLE IF NOT EXISTS tags (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(30) NOT NULL UNIQUE,
+      description TEXT,
+      color VARCHAR(7) DEFAULT '#007bff',
+      post_count INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_name (name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    
+    -- Create posts table
+    CREATE TABLE IF NOT EXISTS posts (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(200) NOT NULL,
+      content TEXT NOT NULL,
+      summary VARCHAR(500),
+      user_id INT NOT NULL,
+      author_name VARCHAR(80),
+      status VARCHAR(20) DEFAULT 'draft',
+      is_featured BOOLEAN DEFAULT FALSE,
+      view_count INT DEFAULT 0,
+      like_count INT DEFAULT 0,
+      comment_count INT DEFAULT 0,
+      category_id INT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      published_at TIMESTAMP NULL,
+      INDEX idx_title (title),
+      INDEX idx_user_id (user_id),
+      INDEX idx_status (status),
+      INDEX idx_is_featured (is_featured),
+      INDEX idx_category_id (category_id),
+      INDEX idx_created_at (created_at),
+      INDEX idx_published_at (published_at),
+      FOREIGN KEY (category_id) REFERENCES categories(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    
+    -- Create post_tags table
+    CREATE TABLE IF NOT EXISTS post_tags (
+      post_id INT NOT NULL,
+      tag_id INT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (post_id, tag_id),
+      FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+      FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    
+    -- Create comments table
+    CREATE TABLE IF NOT EXISTS comments (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      content TEXT NOT NULL,
+      post_id INT NOT NULL,
+      user_id INT NOT NULL,
+      author_name VARCHAR(80),
+      parent_id INT,
+      status VARCHAR(20) DEFAULT 'published',
+      like_count INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_post_id (post_id),
+      INDEX idx_user_id (user_id),
+      INDEX idx_status (status),
+      INDEX idx_created_at (created_at),
+      FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+      FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    
+    -- Insert default categories
+    INSERT IGNORE INTO categories (name, slug, description) VALUES
+    ('技术', 'tech', '技术相关文章'),
+    ('生活', 'life', '生活随笔'),
+    ('随笔', 'notes', '个人随笔');
+    
+    -- Insert default tags
+    INSERT IGNORE INTO tags (name, description) VALUES
+    ('Python', 'Python编程语言'),
+    ('Flask', 'Flask Web框架'),
+    ('微服务', '微服务架构'),
+    ('Docker', 'Docker容器技术'),
+    ('Redis', 'Redis缓存数据库');
+
+{{- end }}

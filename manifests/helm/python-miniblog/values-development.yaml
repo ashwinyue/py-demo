@@ -1,0 +1,201 @@
+# Development Environment Values for python-miniblog
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  namespace: miniblog-dev
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# ConfigMap for application configuration
+configMap:
+  enabled: true
+
+# User Service
+userService:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: python-miniblog-user
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5001
+    targetPort: 5001
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  env:
+    DATABASE_URL: "mysql+pymysql://miniblog:miniblog123@python-miniblog-mysql:3306/miniblog"
+    MYSQL_HOST: "python-miniblog-mysql"
+    MYSQL_PORT: "3306"
+    MYSQL_USER: "miniblog"
+    MYSQL_PASSWORD: "miniblog123"
+    MYSQL_DATABASE: "miniblog"
+    REDIS_URL: "redis://python-miniblog-redis:6379/0"
+    REDIS_HOST: "python-miniblog-redis"
+    REDIS_PORT: "6379"
+    REDIS_DB: "0"
+    JWT_SECRET_KEY: "dev-secret-key-change-in-production"
+    SECRET_KEY: "dev-secret-key-change-in-production"
+    SERVICE_NAME: "user-service"
+    FLASK_ENV: "development"
+    FLASK_CONFIG: "development"
+  livenessProbe:
+    path: /healthz
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+  readinessProbe:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+
+# Blog Service
+blogService:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: python-miniblog-blog
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5002
+    targetPort: 5002
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  env:
+    DATABASE_URL: "mysql+pymysql://miniblog:miniblog123@python-miniblog-mysql:3306/miniblog"
+    MYSQL_HOST: "python-miniblog-mysql"
+    MYSQL_PORT: "3306"
+    MYSQL_USER: "miniblog"
+    MYSQL_PASSWORD: "miniblog123"
+    MYSQL_DATABASE: "miniblog"
+    REDIS_URL: "redis://python-miniblog-redis:6379/1"
+    REDIS_HOST: "python-miniblog-redis"
+    REDIS_PORT: "6379"
+    REDIS_DB: "1"
+    JWT_SECRET_KEY: "dev-secret-key-change-in-production"
+    SECRET_KEY: "dev-secret-key-change-in-production"
+    SERVICE_NAME: "blog-service"
+    FLASK_ENV: "development"
+    FLASK_CONFIG: "development"
+  livenessProbe:
+    path: /healthz
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+  readinessProbe:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+
+# MySQL Database
+mysql:
+  enabled: true
+  image:
+    repository: mysql
+    tag: "8.0"
+    pullPolicy: IfNotPresent
+  auth:
+    rootPassword: "rootpassword"
+    username: "miniblog"
+    password: "miniblog123"
+    database: "miniblog"
+  service:
+    type: ClusterIP
+    port: 3306
+  persistence:
+    enabled: false  # Disable persistence for development
+    size: 2Gi
+    storageClass: ""
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Redis Cache
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 6379
+  persistence:
+    enabled: false  # Disable persistence for development
+    size: 1Gi
+    storageClass: ""
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# Ingress
+ingress:
+  enabled: true
+  className: ""
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+  hosts:
+    - host: miniblog-dev.local
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: python-miniblog-user
+              port:
+                number: 5001
+  tls: []
+
+# Nacos Service Registry (Disabled)
+nacos:
+  enabled: false
+
+# Tyk API Gateway (Disabled for development)
+tyk:
+  enabled: false
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod Security Context
+podSecurityContext: {}
+
+# Security Context
+securityContext: {}
+
+# Node Selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}

@@ -1,10 +1,44 @@
-Flask==2.3.3
-Flask-SQLAlchemy==3.0.5
-Werkzeug==2.3.7
-gunicorn==21.2.0
-redis==5.0.1
-nacos-sdk-python==0.1.5
-requests==2.31.0
+# Web框架
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# 数据库
+sqlalchemy==2.0.23
+# psycopg2-binary==2.9.9  # 暂时注释，项目使用MySQL
 PyMySQL==1.1.0
-cryptography==41.0.7
+cryptography==41.0.4
+alembic==1.13.1
+
+# 缓存
+redis==5.0.1
+
+# 认证和安全
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+python-multipart==0.0.6
+email-validator==2.1.0
+
+# 配置管理
+pydantic==2.5.0
+pydantic-settings==2.1.0
 python-dotenv==1.0.0
+
+# HTTP客户端
+requests==2.31.0
+
+# 文本处理
+markdown==3.4.4
+bleach==6.0.0
+
+# 时间处理
+python-dateutil==2.8.2
+
+# 开发和测试工具
+pytest==7.4.2
+pytest-asyncio==0.21.1
+flake8==6.0.0
+black==23.9.1
+
+# 构建工具
+build==1.0.3
+wheel==0.41.2

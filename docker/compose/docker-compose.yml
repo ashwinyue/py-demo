@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: py-demo-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - py-demo-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: py-demo-redis
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - py-demo-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 用户服务
+  user-service:
+    build:
+      context: ../../
+      dockerfile: docker/Dockerfile.user
+    container_name: py-demo-user-service
+    env_file:
+      - .env.development
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL_USER}
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - FLASK_ENV=${FLASK_ENV}
+      - FLASK_CONFIG=${FLASK_CONFIG}
+      - SERVICE_NAME=${SERVICE_NAME_USER}
+      - POSTS_PER_PAGE=${POSTS_PER_PAGE}
+      - USER_SERVICE_TIMEOUT=${USER_SERVICE_TIMEOUT}
+    ports:
+      - "${USER_SERVICE_PORT}:5001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - py-demo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 博客服务
+  blog-service:
+    build:
+      context: ../../
+      dockerfile: docker/Dockerfile.blog
+    container_name: py-demo-blog-service
+    env_file:
+      - .env.development
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL_BLOG}
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - FLASK_ENV=${FLASK_ENV}
+      - FLASK_CONFIG=${FLASK_CONFIG}
+      - SERVICE_NAME=${SERVICE_NAME_BLOG}
+      - POSTS_PER_PAGE=${POSTS_PER_PAGE}
+      - MAX_POSTS_PER_PAGE=${MAX_POSTS_PER_PAGE}
+      - CACHE_DEFAULT_TIMEOUT=${CACHE_DEFAULT_TIMEOUT}
+      - USER_SERVICE_URL=${USER_SERVICE_URL}
+    ports:
+      - "${BLOG_SERVICE_PORT}:5002"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - py-demo-network
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  py-demo-network:
+    driver: bridge

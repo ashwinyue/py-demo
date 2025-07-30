@@ -52,10 +52,34 @@
 
 ### API 路由配置
 
+**通过Tyk API Gateway的路由映射：**
+
 ```
-/api/users/*  -> 用户服务 (需要认证，除了登录/注册)
-/api/blogs/*  -> 博客服务 (需要认证，除了公开接口)
-/auth/*       -> 认证服务 (无需认证)
+/user-service/*  -> 用户服务:5001/api/* (需要JWT认证)
+/blog-service/*  -> 博客服务:5002/api/* (部分接口需要JWT认证)
+```
+
+**具体路径映射：**
+
+| 网关路径 | 目标服务 | 实际路径 | 认证要求 |
+|----------|----------|----------|----------|
+| `/user-service/users` | 用户服务 | `/api/users` | JWT |
+| `/user-service/auth/login` | 用户服务 | `/api/auth/login` | 无 |
+| `/user-service/auth/register` | 用户服务 | `/api/auth/register` | 无 |
+| `/blog-service/posts` | 博客服务 | `/api/posts` | 读取无需认证，写入需要JWT |
+| `/blog-service/categories` | 博客服务 | `/api/categories` | 读取无需认证，写入需要JWT |
+| `/blog-service/tags` | 博客服务 | `/api/tags` | 读取无需认证，写入需要JWT |
+| `/blog-service/comments` | 博客服务 | `/api/comments` | JWT |
+
+**健康检查和监控端点：**
+
+```
+/user-service/healthz   -> 用户服务健康检查
+/blog-service/healthz   -> 博客服务健康检查
+/user-service/metrics   -> 用户服务指标
+/blog-service/metrics   -> 博客服务指标
+/user-service/docs/     -> 用户服务API文档
+/blog-service/docs/     -> 博客服务API文档
 ```
 
 ## 部署指南

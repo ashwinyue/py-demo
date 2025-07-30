@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: miniblog
+
+resources:
+  - namespace.yaml
+  - mysql.yaml
+  - redis.yaml
+  - user-service.yaml
+  - blog-service.yaml
+
+commonLabels:
+  project: python-miniblog
+  version: v1.0.0
+
+images:
+  - name: python-miniblog-user
+    newTag: latest
+  - name: python-miniblog-blog
+    newTag: latest
+
+replicas:
+  - name: python-miniblog-user
+    count: 2
+  - name: python-miniblog-blog
+    count: 2
+  - name: mysql
+    count: 1
+  - name: redis
+    count: 1

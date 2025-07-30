@@ -1,0 +1,42 @@
+{{- if .Values.configMap.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "python-miniblog.fullname" . }}-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "python-miniblog.labels" . | nindent 4 }}
+data:
+  # Database Configuration
+  DATABASE_URL: {{ .Values.userService.env.DATABASE_URL | quote }}
+  MYSQL_HOST: {{ .Values.mysql.service.name | default "python-miniblog-mysql" | quote }}
+  MYSQL_PORT: {{ .Values.mysql.service.port | quote }}
+  MYSQL_USER: {{ .Values.mysql.auth.username | quote }}
+  MYSQL_PASSWORD: {{ .Values.mysql.auth.password | quote }}
+  MYSQL_DATABASE: {{ .Values.mysql.auth.database | quote }}
+  
+  # Redis Configuration
+  REDIS_HOST: {{ printf "python-miniblog-redis" | quote }}
+  REDIS_PORT: {{ .Values.redis.service.port | quote }}
+  REDIS_DB_USER: "0"
+  REDIS_DB_BLOG: "1"
+  
+  # JWT Configuration
+  JWT_SECRET_KEY: {{ .Values.userService.env.JWT_SECRET_KEY | quote }}
+  JWT_ALGORITHM: "HS256"
+  SECRET_KEY: {{ .Values.userService.env.SECRET_KEY | quote }}
+  
+  # Application Configuration
+  POSTS_PER_PAGE: "10"
+  MAX_POSTS_PER_PAGE: "50"
+  CACHE_DEFAULT_TIMEOUT: "300"
+  USER_SERVICE_TIMEOUT: "10"
+  
+  # Service Configuration
+  USER_SERVICE_URL: {{ printf "http://python-miniblog-user:%d" (.Values.userService.service.port | int) | quote }}
+  BLOG_SERVICE_URL: {{ printf "http://python-miniblog-blog:%d" (.Values.blogService.service.port | int) | quote }}
+  
+  # Environment Configuration
+  FLASK_ENV: {{ .Values.userService.env.FLASK_ENV | quote }}
+  FLASK_CONFIG: {{ .Values.userService.env.FLASK_CONFIG | quote }}
+{{- end }}

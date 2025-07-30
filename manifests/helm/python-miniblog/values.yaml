@@ -1,0 +1,229 @@
+# Default values for python-miniblog.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  namespace: miniblog
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# ConfigMap for application configuration
+configMap:
+  enabled: true
+
+
+# User Service
+userService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: python-miniblog-user
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5001
+    targetPort: 5001
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  env:
+    DATABASE_URL: "mysql+pymysql://miniblog:miniblog123@python-miniblog-mysql:3306/miniblog"
+    MYSQL_HOST: "python-miniblog-mysql"
+    MYSQL_PORT: "3306"
+    MYSQL_USER: "miniblog"
+    MYSQL_PASSWORD: "miniblog123"
+    MYSQL_DATABASE: "miniblog"
+    REDIS_URL: "redis://python-miniblog-redis:6379/0"
+    REDIS_HOST: "python-miniblog-redis"
+    REDIS_PORT: "6379"
+    REDIS_DB: "0"
+    JWT_SECRET_KEY: "your-secret-key-here"
+    SECRET_KEY: "your-secret-key-here"
+    SERVICE_NAME: "user-service"
+    FLASK_ENV: "production"
+    FLASK_CONFIG: "production"
+  livenessProbe:
+    path: /healthz
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+  readinessProbe:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+
+# Blog Service
+blogService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: python-miniblog-blog
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5002
+    targetPort: 5002
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  env:
+    DATABASE_URL: "mysql+pymysql://miniblog:miniblog123@python-miniblog-mysql:3306/miniblog"
+    MYSQL_HOST: "python-miniblog-mysql"
+    MYSQL_PORT: "3306"
+    MYSQL_USER: "miniblog"
+    MYSQL_PASSWORD: "miniblog123"
+    MYSQL_DATABASE: "miniblog"
+    REDIS_URL: "redis://python-miniblog-redis:6379/0"
+    REDIS_HOST: "python-miniblog-redis"
+    REDIS_PORT: "6379"
+    REDIS_DB: "1"
+    JWT_SECRET_KEY: "your-secret-key-here"
+    SECRET_KEY: "your-secret-key-here"
+    SERVICE_NAME: "blog-service"
+    FLASK_ENV: "production"
+    FLASK_CONFIG: "production"
+  livenessProbe:
+    path: /healthz
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+  readinessProbe:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+
+# MySQL Database (optional)
+mysql:
+  enabled: true
+  image:
+    repository: mysql
+    tag: "8.0"
+    pullPolicy: IfNotPresent
+  auth:
+    rootPassword: "rootpassword"
+    username: "miniblog"
+    password: "miniblog123"
+    database: "miniblog"
+  service:
+    type: ClusterIP
+    port: 3306
+  persistence:
+    enabled: true
+    size: 8Gi
+    storageClass: ""
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# Redis Cache (optional)
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 6379
+  persistence:
+    enabled: true
+    size: 4Gi
+    storageClass: ""
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Ingress
+ingress:
+  enabled: false
+  className: ""
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+  hosts:
+    - host: python-miniblog.local
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: python-miniblog-tyk-gateway
+              port:
+                number: 8080
+  tls: []
+
+# Nacos Service Registry (Disabled - using Kubernetes native service discovery)
+nacos:
+  enabled: false
+
+# Tyk API Gateway
+tyk:
+  enabled: false
+  gateway:
+    image:
+      repository: tykio/tyk-gateway
+      tag: v5.2
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 8080
+    env:
+      TYK_GW_SECRET: "your-tyk-secret-key"
+      TYK_GW_STORAGE_TYPE: "redis"
+      TYK_GW_STORAGE_HOST: "python-miniblog-redis"
+      TYK_GW_STORAGE_PORT: "6379"
+      TYK_GW_STORAGE_DATABASE: "1"
+      TYK_GW_POLICIES_POLICY_SOURCE: "file"
+      TYK_GW_POLICIES_POLICY_PATH: "/opt/tyk-gateway/policies"
+      TYK_GW_APP_PATH: "/opt/tyk-gateway/apps"
+      TYK_GW_LISTENPORT: "8080"
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+  dashboard:
+    enabled: false
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod Security Context
+podSecurityContext: {}
+
+# Security Context
+securityContext: {}
+
+# Node Selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
