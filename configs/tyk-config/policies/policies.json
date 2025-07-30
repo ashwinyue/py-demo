@@ -1,0 +1,73 @@
+{
+  "jwt_policy": {
+    "id": "jwt_policy",
+    "name": "JWT Policy",
+    "org_id": "1",
+    "rate": 1000,
+    "per": 60,
+    "quota_max": 10000,
+    "quota_renews": 1577836800,
+    "quota_remaining": 10000,
+    "quota_renewal_rate": 3600,
+    "access_rights": {
+      "miniblog-user-api": {
+        "api_name": "Python MiniBlog User Service",
+        "api_id": "miniblog-user-api",
+        "versions": ["Default"],
+        "allowed_urls": [],
+        "restricted_types": [],
+        "limit": {
+          "rate": 1000,
+          "per": 60,
+          "throttle_interval": -1,
+          "throttle_retry_limit": -1,
+          "max_query_depth": -1,
+          "quota_max": 10000,
+          "quota_renews": 1577836800,
+          "quota_remaining": 10000,
+          "quota_renewal_rate": 3600,
+          "set_by_policy": true
+        },
+        "allowance_scope": ""
+      },
+      "miniblog-blog-api": {
+        "api_name": "Python MiniBlog Blog Service",
+        "api_id": "miniblog-blog-api",
+        "versions": ["Default"],
+        "allowed_urls": [],
+        "restricted_types": [],
+        "limit": {
+          "rate": 1000,
+          "per": 60,
+          "throttle_interval": -1,
+          "throttle_retry_limit": -1,
+          "max_query_depth": -1,
+          "quota_max": 10000,
+          "quota_renews": 1577836800,
+          "quota_remaining": 10000,
+          "quota_renewal_rate": 3600,
+          "set_by_policy": true
+        },
+        "allowance_scope": ""
+      }
+    },
+    "hmac_enabled": false,
+    "enable_http_signature_validation": false,
+    "active": true,
+    "is_inactive": false,
+    "date_created": "2024-01-01T00:00:00Z",
+    "tags": ["jwt", "microservices"],
+    "key_expires_in": 0,
+    "partitions": {
+      "quota": false,
+      "rate_limit": false,
+      "acl": false
+    },
+    "last_updated": "2024-01-01T00:00:00Z",
+    "metadata": {},
+    "throttle_interval": -1,
+    "throttle_retry_limit": -1,
+    "max_query_depth": -1,
+    "graphql_introspection_disabled": false
+  }
+}

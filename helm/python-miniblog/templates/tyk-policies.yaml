@@ -1,0 +1,39 @@
+{{- if .Values.tyk.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "python-miniblog.fullname" . }}-tyk-policies
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "python-miniblog.labels" . | nindent 4 }}
+    app.kubernetes.io/component: tyk-gateway
+data:
+  policies.json: |
+    {
+      "jwt_policy": {
+        "id": "jwt_policy",
+        "name": "JWT Authentication Policy",
+        "org_id": "default",
+        "rate": 1000,
+        "per": 60,
+        "quota_max": 10000,
+        "quota_renewal_rate": 3600,
+        "access_rights": {
+          "user-service": {
+            "api_name": "Python MiniBlog User Service",
+            "api_id": "user-service",
+            "versions": ["Default"]
+          },
+          "blog-service": {
+            "api_name": "Python MiniBlog Blog Service",
+            "api_id": "blog-service",
+            "versions": ["Default"]
+          }
+        },
+        "hmac_enabled": false,
+        "active": true,
+        "is_inactive": false,
+        "tags": ["jwt", "api"]
+      }
+    }
+{{- end }}

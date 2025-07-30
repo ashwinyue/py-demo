@@ -1,0 +1,189 @@
+version: '3.8'
+
+services:
+  # 基础设施服务
+  mysql:
+    image: mysql:8.0
+    container_name: miniblog-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: miniblog
+      MYSQL_USER: miniblog
+      MYSQL_PASSWORD: miniblog123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - miniblog-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: miniblog-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - miniblog-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # nacos:
+  #   image: nacos/nacos-server:v2.3.0
+  #   container_name: miniblog-nacos
+  #   environment:
+  #     MODE: standalone
+  #     SPRING_DATASOURCE_PLATFORM: mysql
+  #     MYSQL_SERVICE_HOST: mysql
+  #     MYSQL_SERVICE_DB_NAME: nacos
+  #     MYSQL_SERVICE_USER: root
+  #     MYSQL_SERVICE_PASSWORD: rootpassword
+  #     MYSQL_SERVICE_DB_PARAM: characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
+  #   ports:
+  #     - "8848:8848"
+  #     - "9848:9848"
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #   networks:
+  #     - miniblog-network
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+  # 微服务
+  user-service:
+    build:
+      context: ../services/user-service
+      dockerfile: Dockerfile
+    container_name: miniblog-user-service
+    environment:
+      - DATABASE_URL=mysql://miniblog:miniblog123@mysql:3306/miniblog
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET_KEY=your-secret-key-here
+      - NACOS_SERVER_ADDR=nacos:8848
+      - FLASK_ENV=development
+    ports:
+      - "5001:5001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - miniblog-network
+    volumes:
+      - ../services/user-service:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  blog-service:
+    build:
+      context: ../services/blog-service
+      dockerfile: Dockerfile
+    container_name: miniblog-blog-service
+    environment:
+      - DATABASE_URL=mysql://miniblog:miniblog123@mysql:3306/miniblog
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET_KEY=your-secret-key-here
+      - NACOS_SERVER_ADDR=nacos:8848
+      - FLASK_ENV=development
+    ports:
+      - "5002:5002"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - miniblog-network
+    volumes:
+      - ../services/blog-service:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: miniblog-api-gateway
+    environment:
+      - USER_SERVICE_URL=http://user-service:5001
+      - BLOG_SERVICE_URL=http://blog-service:5002
+      - JWT_SECRET_KEY=your-secret-key-here
+      - FLASK_ENV=development
+    ports:
+      - "8000:8000"
+    depends_on:
+      user-service:
+        condition: service_healthy
+      blog-service:
+        condition: service_healthy
+    networks:
+      - miniblog-network
+    volumes:
+      - ./services/api-gateway:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Tyk API Gateway
+  tyk-gateway:
+    image: tykio/tyk-gateway:v5.2
+    container_name: miniblog-tyk-gateway
+    environment:
+      - TYK_GW_SECRET=your-tyk-secret-key
+      - TYK_GW_STORAGE_TYPE=redis
+      - TYK_GW_STORAGE_HOST=redis
+      - TYK_GW_STORAGE_PORT=6379
+      - TYK_GW_STORAGE_DATABASE=1
+      - TYK_GW_POLICIES_POLICY_SOURCE=file
+      - TYK_GW_POLICIES_POLICY_PATH=/opt/tyk-gateway/policies
+      - TYK_GW_APP_PATH=/opt/tyk-gateway/apps
+      - TYK_GW_LISTENPORT=8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../configs/tyk-config/apps:/opt/tyk-gateway/apps
+      - ../configs/tyk-config/policies:/opt/tyk-gateway/policies
+    depends_on:
+      redis:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      blog-service:
+        condition: service_healthy
+    networks:
+      - miniblog-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/hello"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  miniblog-network:
+    driver: bridge

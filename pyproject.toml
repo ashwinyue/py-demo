@@ -1,0 +1,27 @@
+[project]
+name = "miniblog"
+version = "0.1.0"
+description = "A mini blog API built with Flask"
+requires-python = ">=3.8.1"
+dependencies = [
+    "Flask>=2.3.0",
+    "Flask-SQLAlchemy>=3.0.0",
+    "Werkzeug>=2.3.0",
+    "gunicorn>=21.0.0",
+    "python-dotenv>=1.0.0",
+    "requests>=2.31.0",
+    "cryptography>=41.0.0",
+    "redis>=4.5.0",
+    "nacos-sdk-python>=0.1.5"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0"
+]

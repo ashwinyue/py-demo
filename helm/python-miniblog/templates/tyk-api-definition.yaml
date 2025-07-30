@@ -1,0 +1,48 @@
+{{- if .Values.tyk.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "python-miniblog.fullname" . }}-tyk-api-definition
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "python-miniblog.labels" . | nindent 4 }}
+    app.kubernetes.io/component: tyk-gateway
+data:
+  api-definition.json: |
+    {
+      "name": "Python MiniBlog API",
+      "slug": "miniblog-api",
+      "api_id": "miniblog",
+      "org_id": "default",
+      "use_keyless": true,
+      "definition": {
+        "location": "header",
+        "key": "version"
+      },
+      "version_data": {
+        "not_versioned": true,
+        "versions": {
+          "Default": {
+            "name": "Default",
+            "use_extended_paths": true
+          }
+        }
+      },
+      "proxy": {
+        "listen_path": "/",
+        "target_url": "http://{{ include \"python-miniblog.fullname\" . }}-api:5000",
+        "strip_listen_path": false
+      },
+      "active": true,
+      "auth": {
+        "auth_header_name": "Authorization"
+      },
+      "enable_cors": true,
+      "cors": {
+        "enable": true,
+        "allowed_origins": ["*"],
+        "allowed_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allowed_headers": ["Origin", "Accept", "Content-Type", "X-Requested-With", "Authorization"]
+      }
+    }
+{{- end }}
