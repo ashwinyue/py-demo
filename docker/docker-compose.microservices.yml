@@ -34,26 +34,7 @@ services:
       timeout: 10s
       retries: 3
 
-  nacos:
-    image: nacos/nacos-server:latest
-    container_name: miniblog-nacos
-    platform: linux/amd64
-    environment:
-      MODE: standalone
-      PREFER_HOST_MODE: hostname
-    ports:
-      - "8848:8848"
-      - "9848:9848"
-      - "9849:9849"
-    volumes:
-      - nacos_data:/home/nacos/data
-    networks:
-      - miniblog-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+
 
   # 微服务
   user-service:
@@ -62,25 +43,27 @@ services:
       dockerfile: Dockerfile
     container_name: miniblog-user-service
     environment:
-      - DATABASE_URL=mysql://miniblog:miniblog123@mysql:3306/miniblog
+      - DATABASE_URL=mysql+pymysql://miniblog:miniblog123@mysql:3306/miniblog
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=miniblog
+      - MYSQL_PASSWORD=miniblog123
+      - MYSQL_DATABASE=miniblog
       - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
       - JWT_SECRET_KEY=your-secret-key-here
       - SECRET_KEY=your-secret-key-here
-      - NACOS_HOST=nacos
-      - NACOS_PORT=8848
-      - NACOS_NAMESPACE=public
-      - NACOS_USERNAME=nacos
-      - NACOS_PASSWORD=nacos
       - SERVICE_NAME=user-service
-      - FLASK_ENV=development
+      - FLASK_ENV=production
+      - FLASK_CONFIG=production
     ports:
       - "5001:5001"
     depends_on:
       mysql:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      nacos:
         condition: service_healthy
     networks:
       - miniblog-network
@@ -98,17 +81,21 @@ services:
       dockerfile: Dockerfile
     container_name: miniblog-blog-service
     environment:
-      - DATABASE_URL=mysql://miniblog:miniblog123@mysql:3306/miniblog
+      - DATABASE_URL=mysql+pymysql://miniblog:miniblog123@mysql:3306/miniblog
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=miniblog
+      - MYSQL_PASSWORD=miniblog123
+      - MYSQL_DATABASE=miniblog
       - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=1
       - JWT_SECRET_KEY=your-secret-key-here
       - SECRET_KEY=your-secret-key-here
-      - NACOS_HOST=nacos
-      - NACOS_PORT=8848
-      - NACOS_NAMESPACE=public
-      - NACOS_USERNAME=nacos
-      - NACOS_PASSWORD=nacos
       - SERVICE_NAME=blog-service
-      - FLASK_ENV=development
+      - FLASK_ENV=production
+      - FLASK_CONFIG=production
     ports:
       - "5002:5002"
     depends_on:
@@ -163,7 +150,6 @@ services:
 volumes:
   mysql_data:
   redis_data:
-  nacos_data:
 
 networks:
   miniblog-network:

@@ -103,8 +103,8 @@ data:
         },
         "proxy": {
           "preserve_host_header": false,
-          "listen_path": "/api/v1/users/",
-          "target_url": "http://python-miniblog-user:5001/",
+          "listen_path": "/user-service/",
+          "target_url": "http://python-miniblog-user:5001/api/v1/",
           "disable_strip_slash": true,
           "strip_listen_path": true,
           "enable_load_balancing": false,
@@ -296,8 +296,8 @@ data:
         },
         "proxy": {
           "preserve_host_header": false,
-          "listen_path": "/api/v1/posts/",
-          "target_url": "http://python-miniblog-blog:5002/",
+          "listen_path": "/blog-service/",
+          "target_url": "http://python-miniblog-blog:5002/api/v1/",
           "disable_strip_slash": true,
           "strip_listen_path": true,
           "enable_load_balancing": false,

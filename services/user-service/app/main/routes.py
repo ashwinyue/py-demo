@@ -29,15 +29,16 @@ def health_check():
     db_status = 'connected'
     try:
         from app import db
-        db.session.execute('SELECT 1')
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
     except Exception as e:
         db_status = f'disconnected: {str(e)}'
     
     # 检查Redis连接
     redis_status = 'connected'
-    if redis_client:
+    if redis_client and redis_client.redis_client:
         try:
-            redis_client.ping()
+            redis_client.redis_client.ping()
         except Exception as e:
             redis_status = f'disconnected: {str(e)}'
     else:

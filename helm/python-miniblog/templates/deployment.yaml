@@ -36,16 +36,11 @@ spec:
             - name: http
               containerPort: {{ .Values.userService.service.targetPort }}
               protocol: TCP
-          envFrom:
-            - configMapRef:
-                name: {{ include "python-miniblog.fullname" . }}-config
           env:
-            - name: SERVICE_NAME
-              value: "user-service"
-            - name: SERVICE_IP
-              value: "python-miniblog-user"
-            - name: SERVICE_PORT
-              value: "5001"
+            {{- range $key, $value := .Values.userService.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
           livenessProbe:
             httpGet:
               path: {{ .Values.userService.livenessProbe.path }}
@@ -114,16 +109,11 @@ spec:
             - name: http
               containerPort: {{ .Values.blogService.service.targetPort }}
               protocol: TCP
-          envFrom:
-            - configMapRef:
-                name: {{ include "python-miniblog.fullname" . }}-config
           env:
-            - name: SERVICE_NAME
-              value: "blog-service"
-            - name: SERVICE_IP
-              value: "python-miniblog-blog"
-            - name: SERVICE_PORT
-              value: "5002"
+            {{- range $key, $value := .Values.blogService.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
           livenessProbe:
             httpGet:
               path: {{ .Values.blogService.livenessProbe.path }}

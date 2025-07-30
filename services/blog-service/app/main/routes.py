@@ -35,7 +35,8 @@ def health_check():
     
     # 检查数据库连接
     try:
-        db.session.execute('SELECT 1')
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
         health_status['checks']['database'] = {
             'status': 'healthy',
             'message': 'Database connection successful'

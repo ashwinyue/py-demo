@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 global:
-  namespace: miniblog
+  namespace: python-miniblog
   imageRegistry: ""
   imagePullSecrets: []
 
@@ -33,20 +33,20 @@ userService:
       memory: 256Mi
   env:
     DATABASE_URL: "mysql+pymysql://miniblog:miniblog123@python-miniblog-mysql:3306/miniblog"
+    MYSQL_HOST: "python-miniblog-mysql"
+    MYSQL_PORT: "3306"
+    MYSQL_USER: "miniblog"
+    MYSQL_PASSWORD: "miniblog123"
+    MYSQL_DATABASE: "miniblog"
+    REDIS_URL: "redis://python-miniblog-redis:6379/0"
     REDIS_HOST: "python-miniblog-redis"
     REDIS_PORT: "6379"
     REDIS_DB: "0"
-    NACOS_HOST: "python-miniblog-nacos"
-    NACOS_PORT: "8848"
-    NACOS_NAMESPACE: "public"
-    NACOS_USERNAME: "nacos"
-    NACOS_PASSWORD: "nacos"
-    SERVICE_NAME: "user-service"
-    SERVICE_IP: "python-miniblog-user"
-    SERVICE_PORT: "5001"
     JWT_SECRET_KEY: "your-secret-key-here"
-    JWT_ALGORITHM: "HS256"
     SECRET_KEY: "your-secret-key-here"
+    SERVICE_NAME: "user-service"
+    FLASK_ENV: "production"
+    FLASK_CONFIG: "production"
   livenessProbe:
     path: /healthz
     initialDelaySeconds: 30
@@ -77,8 +77,22 @@ blogService:
     requests:
       cpu: 250m
       memory: 256Mi
-  # Environment variables are now managed via ConfigMap
-  # Only service-specific variables remain here if needed
+  env:
+    DATABASE_URL: "mysql+pymysql://miniblog:miniblog123@python-miniblog-mysql:3306/miniblog"
+    MYSQL_HOST: "python-miniblog-mysql"
+    MYSQL_PORT: "3306"
+    MYSQL_USER: "miniblog"
+    MYSQL_PASSWORD: "miniblog123"
+    MYSQL_DATABASE: "miniblog"
+    REDIS_URL: "redis://python-miniblog-redis:6379/0"
+    REDIS_HOST: "python-miniblog-redis"
+    REDIS_PORT: "6379"
+    REDIS_DB: "1"
+    JWT_SECRET_KEY: "your-secret-key-here"
+    SECRET_KEY: "your-secret-key-here"
+    SERVICE_NAME: "blog-service"
+    FLASK_ENV: "production"
+    FLASK_CONFIG: "production"
   livenessProbe:
     path: /healthz
     initialDelaySeconds: 30
@@ -98,7 +112,7 @@ mysql:
     tag: "8.0"
     pullPolicy: IfNotPresent
   auth:
-    rootPassword: "root123"
+    rootPassword: "rootpassword"
     username: "miniblog"
     password: "miniblog123"
     database: "miniblog"
@@ -161,29 +175,6 @@ ingress:
 # Nacos Service Registry (Disabled - using Kubernetes native service discovery)
 nacos:
   enabled: false
-  image:
-    repository: nacos/nacos-server
-    tag: latest
-    pullPolicy: IfNotPresent
-  service:
-    type: ClusterIP
-    port: 8848
-  env:
-    # Registry only mode - no database required
-    MODE: "standalone"
-    NACOS_AUTH_ENABLE: "false"
-    NACOS_AUTH_TOKEN: "SecretKey012345678901234567890123456789012345678901234567890123456789"
-    NACOS_AUTH_IDENTITY_KEY: "serverIdentity"
-    NACOS_AUTH_IDENTITY_VALUE: "security"
-    # Disable config center features
-    NACOS_CONFIG_MIGRATE_ENABLED: "false"
-  resources:
-    limits:
-      cpu: 500m
-      memory: 1Gi
-    requests:
-      cpu: 250m
-      memory: 512Mi
 
 # Tyk API Gateway
 tyk:
@@ -191,26 +182,21 @@ tyk:
   gateway:
     image:
       repository: tykio/tyk-gateway
-      tag: v5.2.3
+      tag: v5.2
       pullPolicy: IfNotPresent
     service:
       type: ClusterIP
       port: 8080
     env:
-      TYK_GW_SECRET: "352d20ee67be67f6340b4c0605b044b7"
+      TYK_GW_SECRET: "your-tyk-secret-key"
       TYK_GW_STORAGE_TYPE: "redis"
       TYK_GW_STORAGE_HOST: "python-miniblog-redis"
       TYK_GW_STORAGE_PORT: "6379"
       TYK_GW_STORAGE_DATABASE: "1"
-      TYK_GW_ENABLEANALYTICS: "false"
-      TYK_GW_ANALYTICSCONFIG_TYPE: ""
-      TYK_GW_HTTPSERVEROPTIONS_USESSL: "false"
-      TYK_GW_HTTPSERVEROPTIONS_CERTIFICATES: ""
-      TYK_GW_HTTPSERVEROPTIONS_SSLINSECURESKIPVERIFY: "true"
-      TYK_GW_LOGLEVEL: "info"
       TYK_GW_POLICIES_POLICY_SOURCE: "file"
       TYK_GW_POLICIES_POLICY_PATH: "/opt/tyk-gateway/policies"
       TYK_GW_APP_PATH: "/opt/tyk-gateway/apps"
+      TYK_GW_LISTENPORT: "8080"
     resources:
       limits:
         cpu: 500m
