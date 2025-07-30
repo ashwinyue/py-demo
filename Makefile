@@ -1,4 +1,4 @@
-.PHONY: help setup init-db dev dev-microservices dev-stop test lint format clean build docker-build docker-run deploy helm-install helm-uninstall dev-setup microservices-setup status
+.PHONY: help setup init-db dev dev-microservices dev-stop test lint format clean build docker-build docker-run deploy helm-install helm-uninstall dev-setup microservices-setup status nacos-init nacos-publish nacos-get nacos-remove nacos-test
 
 # 默认目标
 help:
@@ -21,6 +21,11 @@ help:
 	@echo "  dev-setup          - 开发环境完整设置"
 	@echo "  microservices-setup - 微服务架构设置"
 	@echo "  status             - 显示项目状态"
+	@echo "  nacos-init         - 初始化Nacos配置"
+	@echo "  nacos-publish      - 发布配置到Nacos"
+	@echo "  nacos-get          - 获取Nacos配置"
+	@echo "  nacos-remove       - 删除Nacos配置"
+	@echo "  nacos-test         - 测试Nacos连接"
 
 # 项目初始化
 setup:
@@ -175,3 +180,73 @@ status:
 	@echo "Helm版本: $(shell helm version --short 2>/dev/null || echo '未安装')"
 	@echo "kubectl版本: $(shell kubectl version --client --short 2>/dev/null || echo '未安装')"
 	@if [ -f .env ]; then echo "配置文件: ✓ .env存在"; else echo "配置文件: ✗ .env不存在"; fi
+
+# Nacos配置管理
+nacos-init:
+	@echo "初始化Nacos配置..."
+	@if [ ! -f .env ]; then \
+		echo "错误: .env文件不存在，请先运行 'make setup'"; \
+		exit 1; \
+	fi
+	@if command -v uv >/dev/null 2>&1; then \
+		uv run python scripts/manage_nacos_config.py publish-examples --group DEFAULT_GROUP; \
+	else \
+		python scripts/manage_nacos_config.py publish-examples --group DEFAULT_GROUP; \
+	fi
+	@echo "Nacos配置初始化完成"
+
+nacos-publish:
+	@echo "发布配置到Nacos..."
+	@if [ -z "$(DATA_ID)" ]; then \
+		echo "错误: 请指定DATA_ID，例如: make nacos-publish DATA_ID=test-config CONTENT='{\"key\": \"value\"}'" ; \
+		exit 1; \
+	fi
+	@if [ -z "$(CONTENT)" ] && [ -z "$(FILE)" ]; then \
+		echo "错误: 请指定CONTENT或FILE参数"; \
+		exit 1; \
+	fi
+	@if command -v uv >/dev/null 2>&1; then \
+		if [ -n "$(FILE)" ]; then \
+			uv run python scripts/manage_nacos_config.py publish --data-id $(DATA_ID) --group $(GROUP) --file $(FILE); \
+		else \
+			uv run python scripts/manage_nacos_config.py publish --data-id $(DATA_ID) --group $(GROUP) --content '$(CONTENT)'; \
+		fi; \
+	else \
+		if [ -n "$(FILE)" ]; then \
+			python scripts/manage_nacos_config.py publish --data-id $(DATA_ID) --group $(GROUP) --file $(FILE); \
+		else \
+			python scripts/manage_nacos_config.py publish --data-id $(DATA_ID) --group $(GROUP) --content '$(CONTENT)'; \
+		fi; \
+	fi
+
+nacos-get:
+	@echo "获取Nacos配置..."
+	@if [ -z "$(DATA_ID)" ]; then \
+		echo "错误: 请指定DATA_ID，例如: make nacos-get DATA_ID=common-config"; \
+		exit 1; \
+	fi
+	@if command -v uv >/dev/null 2>&1; then \
+		uv run python scripts/manage_nacos_config.py get --data-id $(DATA_ID) --group $(or $(GROUP),DEFAULT_GROUP); \
+	else \
+		python scripts/manage_nacos_config.py get --data-id $(DATA_ID) --group $(or $(GROUP),DEFAULT_GROUP); \
+	fi
+
+nacos-remove:
+	@echo "删除Nacos配置..."
+	@if [ -z "$(DATA_ID)" ]; then \
+		echo "错误: 请指定DATA_ID，例如: make nacos-remove DATA_ID=test-config"; \
+		exit 1; \
+	fi
+	@if command -v uv >/dev/null 2>&1; then \
+		uv run python scripts/manage_nacos_config.py remove --data-id $(DATA_ID) --group $(or $(GROUP),DEFAULT_GROUP); \
+	else \
+		python scripts/manage_nacos_config.py remove --data-id $(DATA_ID) --group $(or $(GROUP),DEFAULT_GROUP); \
+	fi
+
+nacos-test:
+	@echo "测试Nacos连接..."
+	@if command -v uv >/dev/null 2>&1; then \
+		uv run python -c "from scripts.manage_nacos_config import get_nacos_client; client = get_nacos_client(); print('✅ Nacos连接成功' if client else '❌ Nacos连接失败')"; \
+	else \
+		python -c "from scripts.manage_nacos_config import get_nacos_client; client = get_nacos_client(); print('✅ Nacos连接成功' if client else '❌ Nacos连接失败')"; \
+	fi

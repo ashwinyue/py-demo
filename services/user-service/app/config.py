@@ -7,6 +7,9 @@ class Config:
     # 基本配置
     SECRET_KEY = env_config('SECRET_KEY', default='dev-secret-key-change-in-production')
     
+    # 服务配置
+    SERVICE_NAME = env_config('SERVICE_NAME', default='user-service')
+    
     # 数据库配置
     MYSQL_HOST = env_config('MYSQL_HOST', default='localhost')
     MYSQL_PORT = env_config('MYSQL_PORT', default=3306, cast=int)

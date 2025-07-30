@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 from flask import current_app, request, jsonify, g
 from nacos import NacosClient
+from .utils.nacos_config import nacos_config_manager
 
 # 全局变量
 redis_client = None
@@ -45,6 +46,10 @@ def init_nacos(app):
             username=app.config.get('NACOS_USERNAME'),
             password=app.config.get('NACOS_PASSWORD')
         )
+        
+        # 初始化Nacos配置管理器
+        nacos_config_manager.init_app(app)
+        
         app.logger.info('Nacos客户端初始化成功')
     except Exception as e:
         app.logger.error(f'Nacos客户端初始化失败: {e}')

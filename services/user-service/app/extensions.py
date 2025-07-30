@@ -6,6 +6,7 @@ import jwt
 from functools import wraps
 from flask import request, jsonify, current_app
 from typing import Optional
+from .utils.nacos_config import nacos_config_manager
 
 # 数据库实例
 db = SQLAlchemy()
@@ -166,6 +167,9 @@ class NacosClient:
             self.service_name = app.config['SERVICE_NAME']
             self.service_ip = app.config['SERVICE_HOST']
             self.service_port = app.config['SERVICE_PORT']
+            
+            # 初始化Nacos配置管理器
+            nacos_config_manager.init_app(app)
             
             app.logger.info("Nacos client initialized successfully")
         except Exception as e:

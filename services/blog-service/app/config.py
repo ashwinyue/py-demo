@@ -8,6 +8,9 @@ class Config:
     # 基本配置
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'blog-service-secret-key-2024'
     
+    # 服务配置
+    SERVICE_NAME = os.environ.get('SERVICE_NAME') or 'blog-service'
+    
     # 数据库配置
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         f'mysql+pymysql://root:password@localhost:3306/blog_service'

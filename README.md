@@ -13,6 +13,7 @@
 - 📖 **API文档**：集成 Swagger OpenAPI 文档
 - 🔧 **现代工具**：支持 uv 包管理器，快速依赖安装
 - 🌐 **API网关**：Tyk 网关统一管理服务路由
+- ⚙️ **配置管理**：Nacos 动态配置管理，支持配置热更新
 
 ## 📁 项目结构
 
@@ -25,14 +26,18 @@ py-demo/
 ├── scripts/                      # 部署和管理脚本
 │   ├── deploy.sh                 # Kubernetes部署
 │   ├── start-dev.sh              # 微服务开发环境启动
-│   └── stop-dev.sh               # 微服务开发环境停止
+│   ├── stop-dev.sh               # 微服务开发环境停止
+│   └── manage_nacos_config.py    # Nacos配置管理脚本
 ├── docker/                       # Docker配置
 │   └── docker-compose.microservices.yml
-├── configs/                      # 配置文件（包含Tyk网关配置）
-│   └── tyk-config/               # Tyk API网关配置
+├── configs/                      # 配置文件
+│   ├── tyk-config/               # Tyk API网关配置
+│   ├── .env.example              # 环境变量示例
+│   └── nacos-config-examples.json # Nacos配置示例
 ├── docs/                         # 项目文档
 │   ├── README-MICROSERVICES.md   # 微服务架构文档
-│   └── PROJECT-STRUCTURE.md      # 项目结构文档
+│   ├── PROJECT-STRUCTURE.md      # 项目结构文档
+│   └── nacos-config-guide.md     # Nacos配置管理指南
 ├── helm/                         # Kubernetes部署
 ├── tests/                        # 测试文件
 ├── Makefile                      # 项目管理命令
@@ -145,6 +150,8 @@ cd ../blog-service && flask db upgrade
 | REDIS_PORT | Redis端口 | 6379 |
 | NACOS_HOST | Nacos主机 | localhost |
 | NACOS_PORT | Nacos端口 | 8848 |
+| NACOS_NAMESPACE | Nacos命名空间 | public |
+| SERVICE_NAME | 服务名称 | user-service/blog-service |
 
 ### 数据库配置
 
@@ -204,6 +211,32 @@ flask db upgrade
 - 使用 HTTP REST API 进行服务间通信
 - 通过 Tyk API 网关进行路由和负载均衡
 - 使用 Redis 进行缓存和会话共享
+
+## ⚙️ 配置管理
+
+本项目集成了 Nacos 配置管理功能，支持动态配置和配置热更新。
+
+### 配置特性
+- 🔄 **动态配置**：从 Nacos 动态加载配置，无需重启服务
+- 🔥 **热更新**：配置变更时自动更新应用配置
+- 📦 **分组管理**：按业务模块组织配置
+- 🌍 **多环境**：通过命名空间区分不同环境
+- 💾 **本地缓存**：配置本地缓存，提高访问性能
+
+### 配置管理
+
+```bash
+# 发布示例配置到 Nacos
+python scripts/manage_nacos_config.py publish-examples --group DEFAULT_GROUP
+
+# 获取配置
+python scripts/manage_nacos_config.py get --data-id common-config --group DEFAULT_GROUP
+
+# 发布单个配置
+python scripts/manage_nacos_config.py publish --data-id test-config --content '{"key": "value"}'
+```
+
+详细的配置管理指南请参考 [Nacos配置管理指南](docs/nacos-config-guide.md)。
 
 ## 🔧 技术栈
 

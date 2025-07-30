@@ -1,0 +1,72 @@
+{
+  "common-config": {
+    "description": "通用配置，所有服务共享",
+    "config": {
+      "log_level": "INFO",
+      "cors_origins": "http://localhost:3000,http://localhost:8080",
+      "jwt_secret_key": "your-jwt-secret-key-here",
+      "jwt_expires_hours": 24
+    }
+  },
+  "database-config": {
+    "description": "数据库配置",
+    "config": {
+      "database_url": "mysql+pymysql://root:password@mysql:3306/miniblog",
+      "database_pool_size": {
+        "pool_size": 20,
+        "pool_recycle": 3600,
+        "pool_pre_ping": true,
+        "max_overflow": 30
+      }
+    }
+  },
+  "redis-config": {
+    "description": "Redis配置",
+    "config": {
+      "redis_host": "redis",
+      "redis_port": 6379,
+      "redis_db": 0,
+      "redis_password": null,
+      "cache_default_timeout": 300
+    }
+  },
+  "user-service-config": {
+    "description": "用户服务专用配置",
+    "config": {
+      "password_min_length": 8,
+      "password_require_special_chars": true,
+      "max_login_attempts": 5,
+      "account_lockout_duration": 1800,
+      "email_verification_required": true,
+      "session_timeout_minutes": 30,
+      "admin_emails": [
+        "admin@example.com"
+      ],
+      "user_registration_enabled": true,
+      "profile_image_max_size": 5242880,
+      "allowed_image_types": [
+        "jpg",
+        "jpeg",
+        "png",
+        "gif"
+      ]
+    }
+  },
+  "blog-service-config": {
+    "description": "博客服务专用配置",
+    "config": {
+      "posts_per_page": 10,
+      "max_posts_per_page": 50,
+      "cache_posts_timeout": 600,
+      "max_post_title_length": 200,
+      "max_post_content_length": 50000,
+      "allow_html_in_posts": false,
+      "post_auto_save_interval": 30,
+      "featured_posts_count": 5,
+      "user_service_timeout": 10,
+      "search_results_per_page": 20,
+      "tag_max_length": 50,
+      "max_tags_per_post": 10
+    }
+  }
+}
