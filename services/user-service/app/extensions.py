@@ -2,6 +2,9 @@ from flask_sqlalchemy import SQLAlchemy
 import redis
 import nacos
 import logging
+import jwt
+from functools import wraps
+from flask import request, jsonify, current_app
 from typing import Optional
 
 # 数据库实例
@@ -198,3 +201,77 @@ class NacosClient:
 # 创建实例
 redis_client = RedisClient()
 nacos_client = NacosClient()
+
+
+def get_redis_client():
+    """获取Redis客户端实例"""
+    return redis_client
+
+
+def get_nacos_client():
+    """获取Nacos客户端实例"""
+    return nacos_client
+
+
+def token_required(f):
+    """Token验证装饰器"""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        auth_header = request.headers.get('Authorization')
+        
+        if auth_header:
+            try:
+                token = auth_header.split(' ')[1]  # Bearer <token>
+            except IndexError:
+                return jsonify({'error': 'Invalid token format'}), 401
+        
+        if not token:
+            return jsonify({'error': 'Token is missing'}), 401
+        
+        try:
+            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+            from app.models import User
+            current_user = User.query.get(data['user_id'])
+            if not current_user:
+                return jsonify({'error': 'Invalid token'}), 401
+        except jwt.ExpiredSignatureError:
+            return jsonify({'error': 'Token has expired'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'error': 'Invalid token'}), 401
+        
+        return f(current_user, *args, **kwargs)
+    return decorated
+
+
+def admin_required(f):
+    """管理员权限装饰器"""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        auth_header = request.headers.get('Authorization')
+        
+        if auth_header:
+            try:
+                token = auth_header.split(' ')[1]  # Bearer <token>
+            except IndexError:
+                return jsonify({'error': 'Invalid token format'}), 401
+        
+        if not token:
+            return jsonify({'error': 'Token is missing'}), 401
+        
+        try:
+            data = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+            from app.models import User
+            current_user = User.query.get(data['user_id'])
+            if not current_user:
+                return jsonify({'error': 'Invalid token'}), 401
+            if not current_user.is_admin:
+                return jsonify({'error': 'Admin access required'}), 403
+        except jwt.ExpiredSignatureError:
+            return jsonify({'error': 'Token has expired'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'error': 'Invalid token'}), 401
+        
+        return f(current_user, *args, **kwargs)
+    return decorated

@@ -1,22 +1,26 @@
-.PHONY: help setup init-db dev dev-uv test lint format clean build docker-build docker-run deploy helm-install helm-uninstall
+.PHONY: help setup init-db dev dev-microservices dev-stop test lint format clean build docker-build docker-run deploy helm-install helm-uninstall dev-setup microservices-setup status
 
 # 默认目标
 help:
 	@echo "Available commands:"
-	@echo "  setup       - 初始化项目环境"
-	@echo "  init-db     - 初始化MySQL数据库"
-	@echo "  dev         - 启动开发服务器（传统方式）"
-	@echo "  dev-uv      - 使用uv启动开发服务器"
-	@echo "  test        - 运行测试"
-	@echo "  lint        - 代码检查"
-	@echo "  format      - 代码格式化"
-	@echo "  clean       - 清理临时文件"
-	@echo "  build       - 构建应用"
-	@echo "  docker-build - 构建Docker镜像"
-	@echo "  docker-run  - 运行Docker容器"
-	@echo "  deploy      - 部署到生产环境"
-	@echo "  helm-install - 使用Helm安装到Kubernetes"
-	@echo "  helm-uninstall - 卸载Helm部署"
+	@echo "  setup              - 初始化项目环境"
+	@echo "  init-db            - 初始化MySQL数据库"
+	@echo "  dev                - 启动单体应用开发服务器"
+	@echo "  dev-microservices  - 启动微服务开发环境"
+	@echo "  dev-stop           - 停止微服务开发环境"
+	@echo "  test               - 运行测试"
+	@echo "  lint               - 代码检查"
+	@echo "  format             - 代码格式化"
+	@echo "  clean              - 清理临时文件"
+	@echo "  build              - 构建应用"
+	@echo "  docker-build       - 构建Docker镜像"
+	@echo "  docker-run         - 运行Docker容器"
+	@echo "  deploy             - 部署到Kubernetes"
+	@echo "  helm-install       - 使用Helm安装到Kubernetes"
+	@echo "  helm-uninstall     - 卸载Helm部署"
+	@echo "  dev-setup          - 开发环境完整设置"
+	@echo "  microservices-setup - 微服务架构设置"
+	@echo "  status             - 显示项目状态"
 
 # 项目初始化
 setup:
@@ -53,19 +57,26 @@ init-db:
 	fi
 	@echo "数据库初始化完成"
 
-# 开发服务器（传统方式）
+# 开发服务器（单体应用）
 dev:
-	@echo "启动Flask开发服务器（传统方式）..."
-	@if [ -f .venv/bin/activate ]; then \
-		source .venv/bin/activate && python run.py; \
+	@echo "启动Flask开发服务器（单体应用）..."
+	@if command -v uv >/dev/null 2>&1; then \
+		uv run python run.py; \
 	else \
 		python run.py; \
 	fi
 
-# 开发服务器（uv方式）
-dev-uv:
-	@echo "使用uv启动Mini Blog应用..."
-	uv run python run.py
+# 微服务开发环境
+dev-microservices:
+	@echo "启动微服务开发环境..."
+	@chmod +x scripts/start-dev.sh
+	@./scripts/start-dev.sh
+
+# 停止微服务开发环境
+dev-stop:
+	@echo "停止微服务开发环境..."
+	@chmod +x scripts/stop-dev.sh
+	@./scripts/stop-dev.sh
 
 # 运行测试
 test:
@@ -116,29 +127,51 @@ build: clean lint test
 
 # 构建Docker镜像
 docker-build:
-	@echo "构建Docker镜像..."
-	docker build -t miniblog:latest -f docker/Dockerfile .
+	@echo "构建微服务Docker镜像..."
+	docker build -t python-miniblog-user-service:latest ./services/user-service
+	docker build -t python-miniblog-blog-service:latest ./services/blog-service
+	@echo "所有微服务镜像构建完成"
 
-# 运行Docker容器
-docker-run: docker-build
-	@echo "运行Docker容器..."
-	docker run -p 5000:5000 --name miniblog-container miniblog:latest
+# 运行Docker容器（微服务）
+docker-run:
+	@echo "启动微服务Docker环境..."
+	docker-compose -f docker/docker-compose.microservices.yml up -d
 
-# 部署到生产环境
-deploy: build
-	@echo "部署到生产环境..."
-	gunicorn -w 4 -b 0.0.0.0:5000 miniblog:app
+# 部署到Kubernetes
+deploy:
+	@echo "部署微服务到Kubernetes..."
+	@chmod +x scripts/deploy.sh
+	@./scripts/deploy.sh
 
 # 使用Helm安装到Kubernetes
 helm-install:
-	@echo "使用Helm安装到Kubernetes..."
-	helm install miniblog ./helm/python-miniblog
+	@echo "使用Helm安装微服务到Kubernetes..."
+	helm upgrade --install python-miniblog ./helm/python-miniblog --namespace miniblog --create-namespace
 
 # 卸载Helm部署
 helm-uninstall:
 	@echo "卸载Helm部署..."
-	helm uninstall miniblog
+	helm uninstall python-miniblog --namespace miniblog
 
 # 开发环境完整设置
 dev-setup: setup
-	@echo "开发环境设置完成，使用 'make dev-uv' 启动应用"
+	@echo "开发环境设置完成"
+	@echo "单体应用: 使用 'make dev' 启动"
+	@echo "微服务架构: 使用 'make dev-microservices' 启动"
+
+# 微服务架构设置
+microservices-setup: setup
+	@echo "微服务架构环境设置..."
+	@echo "确保Docker和docker-compose已安装"
+	@echo "使用 'make dev-microservices' 启动微服务开发环境"
+	@echo "使用 'make dev-stop' 停止微服务开发环境"
+
+# 显示项目状态
+status:
+	@echo "=== 项目状态 ==="
+	@echo "项目目录: $(PWD)"
+	@echo "Python版本: $(shell python --version 2>/dev/null || echo '未安装')"
+	@echo "Docker版本: $(shell docker --version 2>/dev/null || echo '未安装')"
+	@echo "Helm版本: $(shell helm version --short 2>/dev/null || echo '未安装')"
+	@echo "kubectl版本: $(shell kubectl version --client --short 2>/dev/null || echo '未安装')"
+	@if [ -f .env ]; then echo "配置文件: ✓ .env存在"; else echo "配置文件: ✗ .env不存在"; fi

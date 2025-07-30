@@ -1,5 +1,5 @@
 from flask import jsonify
-from app.api import bp
+from app.api import api as bp
 
 def bad_request(message):
     """400 错误响应"""

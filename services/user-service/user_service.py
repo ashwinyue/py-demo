@@ -7,7 +7,7 @@
 import os
 from flask.cli import with_appcontext
 from app import create_app, db
-from app.models import User, UserSession
+from app.models import User
 from app.extensions import get_redis_client, get_nacos_client
 
 # 创建应用实例

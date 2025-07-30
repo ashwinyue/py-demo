@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
+from flask_restx import Api
 import logging
 from .config import config
 from .extensions import db, redis_client, nacos_client
@@ -22,6 +23,16 @@ def create_app(config_name='development'):
     # 初始化Nacos
     nacos_client.init_app(app)
     
+    # 初始化Swagger API文档
+    api_doc = Api(
+        app,
+        version='1.0',
+        title='用户服务 API',
+        description='Python MiniBlog 用户服务的 RESTful API 文档',
+        doc='/docs/',
+        prefix='/api'
+    )
+    
     # 注册蓝图
     app.register_blueprint(main_blueprint)
     app.register_blueprint(api_blueprint, url_prefix='/api')
@@ -37,7 +48,6 @@ def create_app(config_name='development'):
         app.logger.info('User service startup')
     
     # 注册服务到Nacos
-    @app.before_first_request
     def register_service():
         try:
             nacos_client.register_service(
@@ -47,11 +57,15 @@ def create_app(config_name='development'):
                 metadata={
                     'version': app.config.get('SERVICE_VERSION', '1.0.0'),
                     'environment': config_name,
-                    'service_type': 'user-service'
+                    'description': 'User service for miniblog'
                 }
             )
-            app.logger.info(f"Service {app.config['SERVICE_NAME']} registered to Nacos")
+            app.logger.info('Service registered to Nacos successfully')
         except Exception as e:
-            app.logger.error(f"Failed to register service to Nacos: {e}")
+            app.logger.error(f'Failed to register service to Nacos: {e}')
+    
+    # 在应用启动时注册服务
+    with app.app_context():
+        register_service()
     
     return app

@@ -1,7 +1,7 @@
 from flask import request, jsonify, current_app
 from app import db
 from app.models import User
-from app.api import bp
+from app.api import api as bp
 from app.api.errors import bad_request, not_found
 from app.extensions import get_redis_client, token_required, admin_required
 import json

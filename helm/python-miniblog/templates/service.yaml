@@ -1,20 +1,62 @@
-{{- if .Values.apiServer.enabled }}
+{{- if .Values.apiGateway.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "python-miniblog.fullname" . }}-api
+  name: {{ include "python-miniblog.fullname" . }}-gateway
   namespace: {{ .Values.global.namespace }}
   labels:
     {{- include "python-miniblog.labels" . | nindent 4 }}
-    app.kubernetes.io/component: api-server
+    app.kubernetes.io/component: api-gateway
 spec:
-  type: {{ .Values.apiServer.service.type }}
+  type: {{ .Values.apiGateway.service.type }}
   ports:
-    - port: {{ .Values.apiServer.service.port }}
+    - port: {{ .Values.apiGateway.service.port }}
       targetPort: http
       protocol: TCP
       name: http
   selector:
     {{- include "python-miniblog.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: api-server
+    app.kubernetes.io/component: api-gateway
+{{- end }}
+---
+{{- if .Values.userService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "python-miniblog.fullname" . }}-user
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "python-miniblog.labels" . | nindent 4 }}
+    app.kubernetes.io/component: user-service
+spec:
+  type: {{ .Values.userService.service.type }}
+  ports:
+    - port: {{ .Values.userService.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "python-miniblog.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: user-service
+{{- end }}
+---
+{{- if .Values.blogService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "python-miniblog.fullname" . }}-blog
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "python-miniblog.labels" . | nindent 4 }}
+    app.kubernetes.io/component: blog-service
+spec:
+  type: {{ .Values.blogService.service.type }}
+  ports:
+    - port: {{ .Values.blogService.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "python-miniblog.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: blog-service
 {{- end }}

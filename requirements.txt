@@ -7,3 +7,4 @@ nacos-sdk-python==0.1.5
 requests==2.31.0
 PyMySQL==1.1.0
 cryptography==41.0.7
+python-dotenv==1.0.0

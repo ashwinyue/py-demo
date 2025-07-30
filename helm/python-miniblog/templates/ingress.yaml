@@ -47,12 +47,12 @@ spec:
             backend:
               {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
               service:
-                name: {{ $fullName }}-api
+                name: {{ $fullName }}-tyk-gateway
                 port:
-                  number: {{ $svcPort }}
+                  number: 8080
               {{- else }}
-              serviceName: {{ $fullName }}-api
-              servicePort: {{ $svcPort }}
+              serviceName: {{ $fullName }}-tyk-gateway
+              servicePort: 8080
               {{- end }}
           {{- end }}
     {{- end }}

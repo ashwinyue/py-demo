@@ -24,6 +24,13 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      volumes:
+        - name: tyk-api-definition
+          configMap:
+            name: {{ include "python-miniblog.fullname" . }}-tyk-api-definition
+        - name: tyk-policies
+          configMap:
+            name: {{ include "python-miniblog.fullname" . }}-tyk-policies
       containers:
         - name: tyk-gateway
           image: "{{ .Values.global.imageRegistry }}{{ .Values.tyk.gateway.image.repository }}:{{ .Values.tyk.gateway.image.tag }}"
@@ -37,6 +44,19 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
+            - name: TYK_GW_POLICIES_POLICY_SOURCE
+              value: "file"
+            - name: TYK_GW_POLICIES_POLICY_PATH
+              value: "/opt/tyk-gateway/policies"
+            - name: TYK_GW_APP_PATH
+              value: "/opt/tyk-gateway/apps/api-definition.json"
+          volumeMounts:
+            - name: tyk-api-definition
+              mountPath: /opt/tyk-gateway/apps
+              readOnly: true
+            - name: tyk-policies
+              mountPath: /opt/tyk-gateway/policies
+              readOnly: true
           resources:
             {{- toYaml .Values.tyk.gateway.resources | nindent 12 }}
           livenessProbe:

@@ -288,6 +288,6 @@ if __name__ == '__main__':
     # 开发环境下直接运行
     app.run(
         host='0.0.0.0',
-        port=5001,
+        port=5002,
         debug=True
     )

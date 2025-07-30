@@ -7,18 +7,57 @@ global:
   imageRegistry: ""
   imagePullSecrets: []
 
-# Python MiniBlog API Server
-apiServer:
-  enabled: true
+# API Gateway Service (disabled - using Tyk)
+apiGateway:
+  enabled: false
   replicaCount: 2
   image:
-    repository: python-miniblog
+    repository: python-miniblog-gateway
     tag: latest
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
-    port: 5000
-    targetPort: 5000
+    port: 8000
+    targetPort: 8000
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  env:
+    REDIS_HOST: "python-miniblog-redis"
+    REDIS_PORT: "6379"
+    REDIS_DB: "0"
+    NACOS_SERVER_ADDRESSES: "python-miniblog-nacos:8848"
+    NACOS_NAMESPACE: "public"
+    NACOS_GROUP_NAME: "DEFAULT_GROUP"
+    JWT_SECRET_KEY: "your-secret-key-here"
+    JWT_ALGORITHM: "HS256"
+  livenessProbe:
+    path: /healthz
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+  readinessProbe:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+
+# User Service
+userService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: python-miniblog-user
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5001
+    targetPort: 5001
   resources:
     limits:
       cpu: 500m
@@ -31,8 +70,63 @@ apiServer:
     REDIS_HOST: "python-miniblog-redis"
     REDIS_PORT: "6379"
     REDIS_DB: "0"
-    NACOS_SERVER: "python-miniblog-nacos:8848"
+    NACOS_SERVER_ADDRESSES: "python-miniblog-nacos:8848"
     NACOS_NAMESPACE: "public"
+    NACOS_GROUP_NAME: "DEFAULT_GROUP"
+    SERVICE_NAME: "user-service"
+    SERVICE_IP: "python-miniblog-user"
+    SERVICE_PORT: "5001"
+    JWT_SECRET_KEY: "your-secret-key-here"
+    JWT_ALGORITHM: "HS256"
+    SECRET_KEY: "your-secret-key-here"
+  livenessProbe:
+    path: /healthz
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+  readinessProbe:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+
+# Blog Service
+blogService:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: python-miniblog-blog
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5002
+    targetPort: 5002
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  env:
+    DATABASE_URL: "mysql+pymysql://miniblog:miniblog123@python-miniblog-mysql:3306/miniblog"
+    REDIS_HOST: "python-miniblog-redis"
+    REDIS_PORT: "6379"
+    REDIS_DB: "0"
+    NACOS_SERVER_ADDRESSES: "python-miniblog-nacos:8848"
+    NACOS_NAMESPACE: "public"
+    NACOS_GROUP_NAME: "DEFAULT_GROUP"
+    SERVICE_NAME: "blog-service"
+    SERVICE_IP: "python-miniblog-blog"
+    SERVICE_PORT: "5002"
+    USER_SERVICE_NAME: "user-service"
+    USER_SERVICE_TIMEOUT: "10"
+    JWT_SECRET_KEY: "your-secret-key-here"
+    JWT_ALGORITHM: "HS256"
+    POSTS_PER_PAGE: "10"
+    MAX_POSTS_PER_PAGE: "50"
+    CACHE_DEFAULT_TIMEOUT: "300"
   livenessProbe:
     path: /healthz
     initialDelaySeconds: 30
@@ -99,11 +193,17 @@ ingress:
   className: ""
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
   hosts:
     - host: python-miniblog.local
       paths:
         - path: /
           pathType: Prefix
+          backend:
+            service:
+              name: python-miniblog-tyk-gateway
+              port:
+                number: 8080
   tls: []
 
 # Nacos Configuration Center
@@ -142,7 +242,7 @@ tyk:
   gateway:
     image:
       repository: tykio/tyk-gateway
-      tag: v5.2
+      tag: v5.2.3
       pullPolicy: IfNotPresent
     service:
       type: ClusterIP
@@ -150,9 +250,18 @@ tyk:
     env:
       TYK_GW_SECRET: "352d20ee67be67f6340b4c0605b044b7"
       TYK_GW_STORAGE_TYPE: "redis"
-      TYK_GW_STORAGE_HOST: "redis"
+      TYK_GW_STORAGE_HOST: "python-miniblog-redis"
       TYK_GW_STORAGE_PORT: "6379"
-      TYK_GW_STORAGE_DATABASE: "0"
+      TYK_GW_STORAGE_DATABASE: "1"
+      TYK_GW_ENABLEANALYTICS: "false"
+      TYK_GW_ANALYTICSCONFIG_TYPE: ""
+      TYK_GW_HTTPSERVEROPTIONS_USESSL: "false"
+      TYK_GW_HTTPSERVEROPTIONS_CERTIFICATES: ""
+      TYK_GW_HTTPSERVEROPTIONS_SSLINSECURESKIPVERIFY: "true"
+      TYK_GW_LOGLEVEL: "info"
+      TYK_GW_POLICIES_POLICY_SOURCE: "file"
+      TYK_GW_POLICIES_POLICY_PATH: "/opt/tyk-gateway/policies"
+      TYK_GW_APP_PATH: "/opt/tyk-gateway/apps"
     resources:
       limits:
         cpu: 500m
@@ -162,27 +271,6 @@ tyk:
         memory: 256Mi
   dashboard:
     enabled: false
-    image:
-      repository: tykio/tyk-dashboard
-      tag: v5.2
-      pullPolicy: IfNotPresent
-    service:
-      type: ClusterIP
-      port: 3000
-    env:
-      TYK_DB_STORAGE_MAIN_TYPE: "redis"
-      TYK_DB_REDISHOST: "redis"
-      TYK_DB_REDISPORT: "6379"
-      TYK_DB_REDISDATABASE: "0"
-      TYK_DB_ENABLECLUSTER: "false"
-      TYK_DB_SECRET: "352d20ee67be67f6340b4c0605b044b7"
-    resources:
-      limits:
-        cpu: 300m
-        memory: 256Mi
-      requests:
-        cpu: 150m
-        memory: 128Mi
 
 # Service Account
 serviceAccount:

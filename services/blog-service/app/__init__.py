@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
+from flask_restx import Api
 from app.config import config
 
 # 初始化扩展
@@ -20,6 +21,16 @@ def create_app(config_name='development'):
     db.init_app(app)
     migrate.init_app(app, db)
     CORS(app)
+    
+    # 初始化 Swagger API 文档
+    api = Api(app, 
+              title='Blog Service API',
+              version='1.0',
+              description='博客服务 API 文档',
+              doc='/docs/')
+    
+    # 将 API 实例存储到应用上下文中
+    app.api = api
     
     # 注册蓝图
     from app.main import bp as main_bp

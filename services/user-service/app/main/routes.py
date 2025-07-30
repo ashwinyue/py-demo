@@ -1,5 +1,5 @@
 from flask import jsonify, current_app
-from app.main import bp
+from app.main import main as bp
 from app.extensions import get_redis_client, get_nacos_client
 from datetime import datetime
 
@@ -18,6 +18,7 @@ def index():
         'timestamp': datetime.utcnow().isoformat()
     })
 
+@bp.route('/health')
 @bp.route('/healthz')
 def health_check():
     """健康检查"""

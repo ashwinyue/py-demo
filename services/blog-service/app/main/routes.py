@@ -22,6 +22,7 @@ def index():
         'status': 'running'
     })
 
+@bp.route('/health')
 @bp.route('/healthz')
 def health_check():
     """健康检查"""

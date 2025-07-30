@@ -4,4 +4,4 @@ from flask import Blueprint
 api = Blueprint('api', __name__, url_prefix='/api/v1')
 
 # 导入所有API模块
-from . import auth, users, roles, permissions, admin, errors
+from . import auth, users, errors

@@ -221,31 +221,45 @@ def get_user_info(user_id, token=None):
     return None
 
 def token_required(f):
-    """令牌验证装饰器"""
+    """令牌验证装饰器 - 简化版本，依赖Tyk进行认证"""
     @wraps(f)
     def decorated(*args, **kwargs):
+        # Tyk已经验证了令牌，我们只需要从请求头中提取用户信息
         token = None
         
         # 从请求头获取令牌
-        auth_header = request.headers.get('Authorization')
-        if auth_header:
+        if 'Authorization' in request.headers:
+            auth_header = request.headers['Authorization']
             try:
-                token = auth_header.split(' ')[1]
+                token = auth_header.split(" ")[1]  # Bearer <token>
             except IndexError:
-                return jsonify({'error': 'Invalid authorization header format'}), 401
+                return jsonify({'error': 'Invalid token format'}), 401
         
         if not token:
             return jsonify({'error': 'Token is missing'}), 401
         
-        # 验证令牌
-        user_info = verify_user_token(token)
-        if not user_info:
-            return jsonify({'error': 'Token is invalid or expired'}), 401
-        
-        # 将用户信息添加到请求上下文
-        g.current_user = user_info
-        request.current_user_id = user_info.get('id') or user_info.get('user_id')
-        request.current_user = user_info
+        # 由于Tyk已经验证了令牌，我们只需要解码获取用户信息
+        try:
+            # 不验证签名，因为Tyk已经验证过了
+            payload = jwt.decode(token, options={"verify_signature": False})
+            user_info = {
+                'id': payload.get('user_id'),
+                'user_id': payload.get('user_id'),
+                'username': payload.get('username'),
+                'email': payload.get('email'),
+                'is_admin': payload.get('is_admin', False)
+            }
+            
+            # 将用户信息添加到请求上下文
+            g.current_user = user_info
+            request.current_user_id = user_info.get('id') or user_info.get('user_id')
+            request.current_user = user_info
+            
+        except jwt.DecodeError:
+            return jsonify({'error': 'Invalid token format'}), 401
+        except Exception as e:
+            current_app.logger.error(f"Token processing error: {str(e)}")
+            return jsonify({'error': 'Token processing failed'}), 401
         
         return f(*args, **kwargs)
     

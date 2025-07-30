@@ -49,6 +49,15 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+
+# Logs directory
+logs/*.log
+logs/*.out
+logs/*.err
+
+# Keep logs directory but ignore log files
+!logs/.gitkeep
+.pytest_cache/
 cover/
 
 # Translations
@@ -121,7 +130,7 @@ celerybeat.pid
 
 # Environments
 .env
-.venv
+.venv/
 env/
 venv/
 ENV/

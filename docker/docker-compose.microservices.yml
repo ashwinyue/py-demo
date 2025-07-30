@@ -14,7 +14,6 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - miniblog-network
     healthcheck:
@@ -72,6 +71,7 @@ services:
       - DATABASE_URL=mysql://miniblog:miniblog123@mysql:3306/miniblog
       - REDIS_URL=redis://redis:6379/0
       - JWT_SECRET_KEY=your-secret-key-here
+      - SECRET_KEY=your-secret-key-here
       - NACOS_SERVER_ADDR=nacos:8848
       - FLASK_ENV=development
     ports:
@@ -100,6 +100,7 @@ services:
       - DATABASE_URL=mysql://miniblog:miniblog123@mysql:3306/miniblog
       - REDIS_URL=redis://redis:6379/0
       - JWT_SECRET_KEY=your-secret-key-here
+      - SECRET_KEY=your-secret-key-here
       - NACOS_SERVER_ADDR=nacos:8848
       - FLASK_ENV=development
     ports:
@@ -115,33 +116,6 @@ services:
       - ../services/blog-service:/app
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  api-gateway:
-    build:
-      context: ./services/api-gateway
-      dockerfile: Dockerfile
-    container_name: miniblog-api-gateway
-    environment:
-      - USER_SERVICE_URL=http://user-service:5001
-      - BLOG_SERVICE_URL=http://blog-service:5002
-      - JWT_SECRET_KEY=your-secret-key-here
-      - FLASK_ENV=development
-    ports:
-      - "8000:8000"
-    depends_on:
-      user-service:
-        condition: service_healthy
-      blog-service:
-        condition: service_healthy
-    networks:
-      - miniblog-network
-    volumes:
-      - ./services/api-gateway:/app
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
