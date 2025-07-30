@@ -126,7 +126,7 @@ def verify_user_token(token: str) -> Optional[dict]:
     return None
 
 # JWT相关函数（如果需要本地验证）
-import jwt
+from jose import jwt
 from datetime import datetime, timedelta
 
 def create_access_token(data: dict) -> str:

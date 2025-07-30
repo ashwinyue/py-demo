@@ -14,7 +14,7 @@ from app.services.user_service import UserService
 from app.services.redis_service import redis_service
 from app.schemas.auth import (
     LoginRequest, TokenResponse, RefreshTokenRequest,
-    PasswordResetRequest, PasswordResetConfirm, VerifyEmailRequest
+    ResetPasswordRequest, ChangePasswordRequest, VerificationCodeRequest
 )
 from app.schemas.user import UserCreate, UserResponse
 from app.schemas.common import MessageResponse

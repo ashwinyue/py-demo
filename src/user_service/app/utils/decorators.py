@@ -3,7 +3,7 @@
 装饰器工具函数
 """
 
-import jwt
+from jose import jwt
 import time
 from functools import wraps
 from datetime import datetime

@@ -1,6 +1,6 @@
 import redis
 import logging
-import jwt
+from jose import jwt
 from functools import wraps
 from typing import Optional
 from sqlalchemy.orm import Session

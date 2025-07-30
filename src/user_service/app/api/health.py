@@ -26,11 +26,11 @@ def health_check(db: Session = Depends(get_db)):
     
     return HealthResponse(
         status=overall_status,
-        timestamp=datetime.utcnow(),
-        services={
-            "database": db_status,
-            "redis": redis_status
-        }
+        service="user-service",
+        version="1.0.0",
+        timestamp=datetime.utcnow().isoformat(),
+        database=db_status,
+        redis=redis_status
     )
 
 @router.get("/ping")
