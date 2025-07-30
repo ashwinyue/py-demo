@@ -231,8 +231,8 @@ nacos:
     MYSQL_SERVICE_HOST: python-miniblog-mysql
     MYSQL_SERVICE_DB_NAME: nacos
     MYSQL_SERVICE_PORT: 3306
-    MYSQL_SERVICE_USER: nacos
-    MYSQL_SERVICE_PASSWORD: nacos123
+    MYSQL_SERVICE_USER: miniblog
+    MYSQL_SERVICE_PASSWORD: miniblog123
     MYSQL_SERVICE_DB_PARAM: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useUnicode=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
   resources:
     limits:

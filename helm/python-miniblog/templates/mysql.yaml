@@ -31,14 +31,18 @@ spec:
           value: {{ .Values.mysql.auth.username | quote }}
         - name: MYSQL_PASSWORD
           value: {{ .Values.mysql.auth.password | quote }}
+        - name: MYSQL_ROOT_HOST
+          value: "%"
         ports:
         - containerPort: {{ .Values.mysql.service.port }}
           name: mysql
-        {{- if .Values.mysql.persistence.enabled }}
         volumeMounts:
+        {{- if .Values.mysql.persistence.enabled }}
         - name: mysql-data
           mountPath: /var/lib/mysql
         {{- end }}
+        - name: mysql-init
+          mountPath: /docker-entrypoint-initdb.d
         resources:
           {{- toYaml .Values.mysql.resources | nindent 10 }}
         livenessProbe:
@@ -61,12 +65,15 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 5
           timeoutSeconds: 3
-      {{- if .Values.mysql.persistence.enabled }}
       volumes:
+      {{- if .Values.mysql.persistence.enabled }}
       - name: mysql-data
         persistentVolumeClaim:
           claimName: {{ include "python-miniblog.fullname" . }}-mysql-pvc
       {{- end }}
+      - name: mysql-init
+        configMap:
+          name: {{ include "python-miniblog.fullname" . }}-mysql-init
 ---
 apiVersion: v1
 kind: Service
@@ -104,4 +111,17 @@ spec:
   storageClassName: {{ .Values.mysql.persistence.storageClass }}
   {{- end }}
 {{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "python-miniblog.fullname" . }}-mysql-init
+  labels:
+    {{- include "python-miniblog.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+data:
+  01-create-nacos-db.sql: |
+    CREATE DATABASE IF NOT EXISTS nacos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    GRANT ALL PRIVILEGES ON nacos.* TO '{{ .Values.mysql.auth.username }}'@'%';
+    FLUSH PRIVILEGES;
 {{- end }}
