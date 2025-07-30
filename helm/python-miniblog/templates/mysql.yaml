@@ -1,0 +1,107 @@
+{{- if .Values.mysql.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "python-miniblog.fullname" . }}-mysql
+  labels:
+    {{- include "python-miniblog.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "python-miniblog.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mysql
+  template:
+    metadata:
+      labels:
+        {{- include "python-miniblog.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: "{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
+        imagePullPolicy: {{ .Values.mysql.image.pullPolicy }}
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: {{ .Values.mysql.auth.rootPassword | quote }}
+        - name: MYSQL_DATABASE
+          value: {{ .Values.mysql.auth.database | quote }}
+        - name: MYSQL_USER
+          value: {{ .Values.mysql.auth.username | quote }}
+        - name: MYSQL_PASSWORD
+          value: {{ .Values.mysql.auth.password | quote }}
+        ports:
+        - containerPort: {{ .Values.mysql.service.port }}
+          name: mysql
+        {{- if .Values.mysql.persistence.enabled }}
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        {{- end }}
+        resources:
+          {{- toYaml .Values.mysql.resources | nindent 10 }}
+        livenessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+      {{- if .Values.mysql.persistence.enabled }}
+      volumes:
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: {{ include "python-miniblog.fullname" . }}-mysql-pvc
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "python-miniblog.fullname" . }}-mysql
+  labels:
+    {{- include "python-miniblog.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+spec:
+  type: {{ .Values.mysql.service.type }}
+  ports:
+  - port: {{ .Values.mysql.service.port }}
+    targetPort: mysql
+    protocol: TCP
+    name: mysql
+  selector:
+    {{- include "python-miniblog.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+{{- if .Values.mysql.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "python-miniblog.fullname" . }}-mysql-pvc
+  labels:
+    {{- include "python-miniblog.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mysql
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.mysql.persistence.size }}
+  {{- if .Values.mysql.persistence.storageClass }}
+  storageClassName: {{ .Values.mysql.persistence.storageClass }}
+  {{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,206 @@
+# Default values for python-miniblog.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  namespace: default
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# Python MiniBlog API Server
+apiServer:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: python-miniblog
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5000
+    targetPort: 5000
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  env:
+    DATABASE_URL: "mysql+pymysql://miniblog:miniblog123@python-miniblog-mysql:3306/miniblog"
+    REDIS_HOST: "python-miniblog-redis"
+    REDIS_PORT: "6379"
+    REDIS_DB: "0"
+    NACOS_SERVER: "python-miniblog-nacos:8848"
+    NACOS_NAMESPACE: "public"
+  livenessProbe:
+    path: /healthz
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+  readinessProbe:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+
+# MySQL Database (optional)
+mysql:
+  enabled: true
+  image:
+    repository: mysql
+    tag: "8.0"
+    pullPolicy: IfNotPresent
+  auth:
+    rootPassword: "root123"
+    username: "miniblog"
+    password: "miniblog123"
+    database: "miniblog"
+  service:
+    type: ClusterIP
+    port: 3306
+  persistence:
+    enabled: true
+    size: 8Gi
+    storageClass: ""
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# Redis Cache (optional)
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 6379
+  persistence:
+    enabled: true
+    size: 4Gi
+    storageClass: ""
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Ingress
+ingress:
+  enabled: true
+  className: ""
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  hosts:
+    - host: python-miniblog.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Nacos Configuration Center
+nacos:
+  enabled: true
+  image:
+    repository: nacos/nacos-server
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8848
+  env:
+    MODE: standalone
+    NACOS_AUTH_TOKEN: "VGhpc0lzTXlWZXJ5U2VjdXJlU2VjcmV0S2V5Rm9yTmFjb3NBdXRoMTIzNDU2Nzg5"
+    NACOS_AUTH_IDENTITY_KEY: "serverIdentity"
+    NACOS_AUTH_IDENTITY_VALUE: "security"
+    SPRING_DATASOURCE_PLATFORM: mysql
+    MYSQL_SERVICE_HOST: python-miniblog-mysql
+    MYSQL_SERVICE_DB_NAME: nacos
+    MYSQL_SERVICE_PORT: 3306
+    MYSQL_SERVICE_USER: nacos
+    MYSQL_SERVICE_PASSWORD: nacos123
+    MYSQL_SERVICE_DB_PARAM: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useUnicode=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+# Tyk API Gateway
+tyk:
+  enabled: true
+  gateway:
+    image:
+      repository: tykio/tyk-gateway
+      tag: v5.2
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 8080
+    env:
+      TYK_GW_SECRET: "352d20ee67be67f6340b4c0605b044b7"
+      TYK_GW_STORAGE_TYPE: "redis"
+      TYK_GW_STORAGE_HOST: "redis"
+      TYK_GW_STORAGE_PORT: "6379"
+      TYK_GW_STORAGE_DATABASE: "0"
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+  dashboard:
+    enabled: false
+    image:
+      repository: tykio/tyk-dashboard
+      tag: v5.2
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 3000
+    env:
+      TYK_DB_STORAGE_MAIN_TYPE: "redis"
+      TYK_DB_REDISHOST: "redis"
+      TYK_DB_REDISPORT: "6379"
+      TYK_DB_REDISDATABASE: "0"
+      TYK_DB_ENABLECLUSTER: "false"
+      TYK_DB_SECRET: "352d20ee67be67f6340b4c0605b044b7"
+    resources:
+      limits:
+        cpu: 300m
+        memory: 256Mi
+      requests:
+        cpu: 150m
+        memory: 128Mi
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod Security Context
+podSecurityContext: {}
+
+# Security Context
+securityContext: {}
+
+# Node Selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
