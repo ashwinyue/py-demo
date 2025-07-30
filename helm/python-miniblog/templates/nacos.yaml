@@ -40,15 +40,15 @@ spec:
             {{- toYaml .Values.nacos.resources | nindent 12 }}
           livenessProbe:
             httpGet:
-              path: /
-              port: 8080
+              path: /nacos
+              port: 8848
             initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 10
           readinessProbe:
             httpGet:
-              path: /
-              port: 8080
+              path: /nacos
+              port: 8848
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5

@@ -7,46 +7,10 @@ global:
   imageRegistry: ""
   imagePullSecrets: []
 
-# API Gateway Service (disabled - using Tyk)
-apiGateway:
-  enabled: false
-  replicaCount: 2
-  image:
-    repository: python-miniblog-gateway
-    tag: latest
-    pullPolicy: IfNotPresent
-  service:
-    type: ClusterIP
-    port: 8000
-    targetPort: 8000
-  resources:
-    limits:
-      cpu: 500m
-      memory: 512Mi
-    requests:
-      cpu: 250m
-      memory: 256Mi
-  env:
-    REDIS_HOST: "python-miniblog-redis"
-    REDIS_PORT: "6379"
-    REDIS_DB: "0"
-    NACOS_HOST: "python-miniblog-nacos"
-    NACOS_PORT: "8848"
-    NACOS_NAMESPACE: "public"
-    NACOS_USERNAME: "nacos"
-    NACOS_PASSWORD: "nacos"
-    JWT_SECRET_KEY: "your-secret-key-here"
-    JWT_ALGORITHM: "HS256"
-  livenessProbe:
-    path: /healthz
-    initialDelaySeconds: 30
-    periodSeconds: 10
-    timeoutSeconds: 5
-  readinessProbe:
-    path: /healthz
-    initialDelaySeconds: 5
-    periodSeconds: 5
-    timeoutSeconds: 3
+# ConfigMap for application configuration
+configMap:
+  enabled: true
+
 
 # User Service
 userService:
@@ -113,26 +77,8 @@ blogService:
     requests:
       cpu: 250m
       memory: 256Mi
-  env:
-    DATABASE_URL: "mysql+pymysql://miniblog:miniblog123@python-miniblog-mysql:3306/miniblog"
-    REDIS_HOST: "python-miniblog-redis"
-    REDIS_PORT: "6379"
-    REDIS_DB: "0"
-    NACOS_HOST: "python-miniblog-nacos"
-    NACOS_PORT: "8848"
-    NACOS_NAMESPACE: "public"
-    NACOS_USERNAME: "nacos"
-    NACOS_PASSWORD: "nacos"
-    SERVICE_NAME: "blog-service"
-    SERVICE_IP: "python-miniblog-blog"
-    SERVICE_PORT: "5002"
-    USER_SERVICE_NAME: "user-service"
-    USER_SERVICE_TIMEOUT: "10"
-    JWT_SECRET_KEY: "your-secret-key-here"
-    JWT_ALGORITHM: "HS256"
-    POSTS_PER_PAGE: "10"
-    MAX_POSTS_PER_PAGE: "50"
-    CACHE_DEFAULT_TIMEOUT: "300"
+  # Environment variables are now managed via ConfigMap
+  # Only service-specific variables remain here if needed
   livenessProbe:
     path: /healthz
     initialDelaySeconds: 30
@@ -212,7 +158,7 @@ ingress:
                 number: 8080
   tls: []
 
-# Nacos Configuration Center
+# Nacos Service Registry
 nacos:
   enabled: true
   image:
@@ -223,17 +169,14 @@ nacos:
     type: ClusterIP
     port: 8848
   env:
-    MODE: standalone
-    NACOS_AUTH_TOKEN: "VGhpc0lzTXlWZXJ5U2VjdXJlU2VjcmV0S2V5Rm9yTmFjb3NBdXRoMTIzNDU2Nzg5"
+    # Registry only mode - no database required
+    MODE: "standalone"
+    NACOS_AUTH_ENABLE: "false"
+    NACOS_AUTH_TOKEN: "SecretKey012345678901234567890123456789012345678901234567890123456789"
     NACOS_AUTH_IDENTITY_KEY: "serverIdentity"
     NACOS_AUTH_IDENTITY_VALUE: "security"
-    SPRING_DATASOURCE_PLATFORM: mysql
-    MYSQL_SERVICE_HOST: python-miniblog-mysql
-    MYSQL_SERVICE_DB_NAME: nacos
-    MYSQL_SERVICE_PORT: 3306
-    MYSQL_SERVICE_USER: miniblog
-    MYSQL_SERVICE_PASSWORD: miniblog123
-    MYSQL_SERVICE_DB_PARAM: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useUnicode=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+    # Disable config center features
+    NACOS_CONFIG_MIGRATE_ENABLED: "false"
   resources:
     limits:
       cpu: 500m

@@ -1,76 +1,3 @@
-{{- if .Values.apiGateway.enabled }}
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ include "python-miniblog.fullname" . }}-gateway
-  namespace: {{ .Values.global.namespace }}
-  labels:
-    {{- include "python-miniblog.labels" . | nindent 4 }}
-    app.kubernetes.io/component: api-gateway
-spec:
-  replicas: {{ .Values.apiGateway.replicaCount }}
-  selector:
-    matchLabels:
-      {{- include "python-miniblog.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: api-gateway
-  template:
-    metadata:
-      labels:
-        {{- include "python-miniblog.selectorLabels" . | nindent 8 }}
-        app.kubernetes.io/component: api-gateway
-    spec:
-      {{- with .Values.global.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      serviceAccountName: {{ include "python-miniblog.serviceAccountName" . }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      containers:
-        - name: api-gateway
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.global.imageRegistry }}{{ .Values.apiGateway.image.repository }}:{{ .Values.apiGateway.image.tag }}"
-          imagePullPolicy: {{ .Values.apiGateway.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: {{ .Values.apiGateway.service.targetPort }}
-              protocol: TCP
-          env:
-            {{- range $key, $value := .Values.apiGateway.env }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
-          livenessProbe:
-            httpGet:
-              path: {{ .Values.apiGateway.livenessProbe.path }}
-              port: http
-            initialDelaySeconds: {{ .Values.apiGateway.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.apiGateway.livenessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.apiGateway.livenessProbe.timeoutSeconds }}
-          readinessProbe:
-            httpGet:
-              path: {{ .Values.apiGateway.readinessProbe.path }}
-              port: http
-            initialDelaySeconds: {{ .Values.apiGateway.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.apiGateway.readinessProbe.periodSeconds }}
-            timeoutSeconds: {{ .Values.apiGateway.readinessProbe.timeoutSeconds }}
-          resources:
-            {{- toYaml .Values.apiGateway.resources | nindent 12 }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-{{- end }}
----
 {{- if .Values.userService.enabled }}
 apiVersion: apps/v1
 kind: Deployment
@@ -109,11 +36,16 @@ spec:
             - name: http
               containerPort: {{ .Values.userService.service.targetPort }}
               protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "python-miniblog.fullname" . }}-config
           env:
-            {{- range $key, $value := .Values.userService.env }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
+            - name: SERVICE_NAME
+              value: "user-service"
+            - name: SERVICE_IP
+              value: "python-miniblog-user"
+            - name: SERVICE_PORT
+              value: "5001"
           livenessProbe:
             httpGet:
               path: {{ .Values.userService.livenessProbe.path }}
@@ -182,11 +114,16 @@ spec:
             - name: http
               containerPort: {{ .Values.blogService.service.targetPort }}
               protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "python-miniblog.fullname" . }}-config
           env:
-            {{- range $key, $value := .Values.blogService.env }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
+            - name: SERVICE_NAME
+              value: "blog-service"
+            - name: SERVICE_IP
+              value: "python-miniblog-blog"
+            - name: SERVICE_PORT
+              value: "5002"
           livenessProbe:
             httpGet:
               path: {{ .Values.blogService.livenessProbe.path }}

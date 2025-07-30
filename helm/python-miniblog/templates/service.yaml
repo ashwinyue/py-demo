@@ -1,22 +1,22 @@
-{{- if .Values.apiGateway.enabled }}
+{{- if .Values.tyk.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "python-miniblog.fullname" . }}-gateway
+  name: {{ include "python-miniblog.fullname" . }}-tyk-gateway
   namespace: {{ .Values.global.namespace }}
   labels:
     {{- include "python-miniblog.labels" . | nindent 4 }}
-    app.kubernetes.io/component: api-gateway
+    app.kubernetes.io/component: tyk-gateway
 spec:
-  type: {{ .Values.apiGateway.service.type }}
+  type: {{ .Values.tyk.gateway.service.type }}
   ports:
-    - port: {{ .Values.apiGateway.service.port }}
+    - port: {{ .Values.tyk.gateway.service.port }}
       targetPort: http
       protocol: TCP
       name: http
   selector:
     {{- include "python-miniblog.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: api-gateway
+    app.kubernetes.io/component: tyk-gateway
 {{- end }}
 ---
 {{- if .Values.userService.enabled }}
